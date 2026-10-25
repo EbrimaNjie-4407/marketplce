@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Image as ImageIcon, Send, ArrowLeft, CheckCircle2, ChevronDown, Check } from 'lucide-react';
+import { Upload, Image as ImageIcon, Send, ArrowLeft, CheckCircle2, ChevronDown, Check, Sparkles } from 'lucide-react';
 import { marketplaceStore } from '../../services/store';
 import { VoiceRecorder, VoiceNoteMetadata } from '../common/VoiceRecorder';
 import { VEHICLE_DATA, getAvailableModels, getCanonicalMakeName } from '../../data/vehicleData';
+import { decodeVin, SAMPLE_VINS } from '../../services/vinDecoder';
 import alternatorImg from '../../assets/images/alternator_assembly_1791849520193.jpg';
 
 interface CreatePartRequestViewProps {
@@ -14,6 +15,9 @@ export function CreatePartRequestView({ onBack, onRequestSubmitted }: CreatePart
   const [vehicleMake, setVehicleMake] = useState('Toyota');
   const [vehicleModel, setVehicleModel] = useState('Corolla');
   const [vehicleYear, setVehicleYear] = useState('2014');
+  const [vinInput, setVinInput] = useState('');
+  const [decodedSuccess, setDecodedSuccess] = useState(false);
+  const [decodedSpecs, setDecodedSpecs] = useState('');
   const [partName, setPartName] = useState('Alternator assembly');
   const [partNumber, setPartNumber] = useState('27060-0T140');
   const [preferredCondition, setPreferredCondition] = useState<'New' | 'Used' | 'Either · New or used'>('Either · New or used');
@@ -22,6 +26,29 @@ export function CreatePartRequestView({ onBack, onRequestSubmitted }: CreatePart
   const [voiceNoteData, setVoiceNoteData] = useState<VoiceNoteMetadata | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
+
+  const handleDecodeVin = (val: string) => {
+    const result = decodeVin(val);
+    if (result && result.make) {
+      setVehicleMake(result.make);
+      if (result.model) setVehicleModel(result.model);
+      if (result.year) setVehicleYear(result.year);
+      setDecodedSuccess(true);
+      setDecodedSpecs(`${result.country ? `${result.country} spec` : ''}${result.engine ? ` · ${result.engine}` : ''}`);
+      if (result.engine && (!notes || notes.includes('Must fit'))) {
+        setNotes(`Compatible with ${result.year} ${result.make} ${result.model} (${result.engine}). VIN: ${result.vin}`);
+      }
+      setTimeout(() => setDecodedSuccess(false), 6000);
+    }
+  };
+
+  const handleVinInputChange = (val: string) => {
+    const upper = val.toUpperCase();
+    setVinInput(upper);
+    if (upper.trim().length >= 8) {
+      handleDecodeVin(upper);
+    }
+  };
 
   const [isMakeDropdownOpen, setIsMakeDropdownOpen] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
@@ -182,6 +209,80 @@ export function CreatePartRequestView({ onBack, onRequestSubmitted }: CreatePart
 
             {/* Right 8 Cols: Form inputs from Figma Page 7 */}
             <div className="md:col-span-8 space-y-4">
+              {/* VIN Decoding Auto-fill System */}
+              <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/60 to-slate-50 border border-blue-200/90 rounded-2xl p-4 space-y-3 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xs shadow-xs tracking-wider">
+                      VIN
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                        <span>Auto-Fill from VIN Number</span>
+                        <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 text-[10px] rounded font-bold">Fast Autofill</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Type the 17-digit VIN to instantly fill vehicle make, model and year.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Enter 17-digit VIN (e.g. 4JGDF7DE5FA198243 or 2T1BURHE...)"
+                      value={vinInput}
+                      onChange={(e) => handleVinInputChange(e.target.value)}
+                      className="w-full bg-white border border-blue-300/80 rounded-xl px-3.5 py-2 text-xs font-mono font-bold tracking-wider uppercase text-slate-900 placeholder:font-sans placeholder:font-normal placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDecodeVin(vinInput)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Decode VIN</span>
+                  </button>
+                </div>
+
+                {/* Quick Test VIN chips */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-[11px]">
+                  <span className="text-slate-400 font-medium">Quick sample VINs:</span>
+                  {SAMPLE_VINS.slice(0, 4).map((sample) => (
+                    <button
+                      key={sample.vin}
+                      type="button"
+                      onClick={() => {
+                        setVinInput(sample.vin);
+                        handleDecodeVin(sample.vin);
+                      }}
+                      className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50/70 text-[10px] text-slate-700 font-medium transition-colors shadow-2xs cursor-pointer"
+                    >
+                      {sample.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Decoded Confirmation Banner */}
+                {decodedSuccess && (
+                  <div className="bg-emerald-50 border border-emerald-200/90 rounded-xl p-2.5 flex items-center justify-between text-xs text-emerald-900 animate-fadeIn">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>
+                        Auto-filled: <strong className="font-bold text-emerald-950">{vehicleYear} {vehicleMake} {vehicleModel}</strong>
+                        {decodedSpecs && <span className="text-[11px] text-emerald-700 font-normal"> ({decodedSpecs})</span>}
+                      </span>
+                    </div>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+                      Decoded ✓
+                    </span>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Vehicle Make with Dropdown */}
                 <div ref={makeDropdownRef} className="space-y-1.5 relative">

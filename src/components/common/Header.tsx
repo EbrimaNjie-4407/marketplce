@@ -29,6 +29,7 @@ import {
   getAvailableModels,
   getCanonicalMakeName,
 } from '../../data/vehicleData';
+import { decodeVin, SAMPLE_VINS, VinDecodeResult } from '../../services/vinDecoder';
 
 interface HeaderProps {
   currentView: string;
@@ -42,12 +43,15 @@ export function Header({ currentView: _currentView, onNavigate }: HeaderProps) {
   const [modelQuery, setModelQuery] = useState(store.searchQuery.model);
   const [yearQuery, setYearQuery] = useState(store.searchQuery.year);
   const [vinQuery, setVinQuery] = useState(store.searchQuery.vin);
+  const [vinDecodeResult, setVinDecodeResult] = useState<VinDecodeResult | null>(null);
   const [isPartsDropdownOpen, setIsPartsDropdownOpen] = useState(false);
   const [isMakeDropdownOpen, setIsMakeDropdownOpen] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [isVinSamplesOpen, setIsVinSamplesOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const makeDropdownRef = useRef<HTMLDivElement>(null);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
+  const vinDropdownRef = useRef<HTMLDivElement>(null);
 
   const availableModels = getAvailableModels(makeQuery);
 
@@ -129,6 +133,7 @@ export function Header({ currentView: _currentView, onNavigate }: HeaderProps) {
     setModelQuery('');
     setYearQuery('');
     setVinQuery('');
+    setVinDecodeResult(null);
     marketplaceStore.setSearchQuery({
       part: '',
       make: '',
@@ -136,6 +141,56 @@ export function Header({ currentView: _currentView, onNavigate }: HeaderProps) {
       year: '',
       vin: '',
     });
+  };
+
+  const handleVinInputChange = (rawVal: string) => {
+    const upperVal = rawVal.toUpperCase();
+    setVinQuery(upperVal);
+
+    if (upperVal.trim().length >= 4) {
+      const decoded = decodeVin(upperVal);
+      if (decoded && decoded.make) {
+        setVinDecodeResult(decoded);
+        setMakeQuery(decoded.make);
+        if (decoded.model) {
+          setModelQuery(decoded.model);
+        }
+        if (decoded.year) {
+          setYearQuery(decoded.year);
+        }
+        marketplaceStore.setSearchQuery({
+          part: partQuery,
+          make: decoded.make,
+          model: decoded.model || modelQuery,
+          year: decoded.year || yearQuery,
+          vin: upperVal,
+        });
+        return;
+      }
+    }
+
+    if (upperVal.trim().length === 0) {
+      setVinDecodeResult(null);
+    }
+  };
+
+  const handleSelectSampleVin = (sample: (typeof SAMPLE_VINS)[0]) => {
+    setVinQuery(sample.vin);
+    const decoded = decodeVin(sample.vin);
+    if (decoded && decoded.make) {
+      setVinDecodeResult(decoded);
+      setMakeQuery(decoded.make);
+      setModelQuery(decoded.model);
+      setYearQuery(decoded.year);
+      marketplaceStore.setSearchQuery({
+        part: partQuery,
+        make: decoded.make,
+        model: decoded.model,
+        year: decoded.year,
+        vin: sample.vin,
+      });
+    }
+    setIsVinSamplesOpen(false);
   };
 
   const getFilterIcon = (id: string) => {
@@ -168,6 +223,9 @@ export function Header({ currentView: _currentView, onNavigate }: HeaderProps) {
       }
       if (modelDropdownRef.current && !modelDropdownRef.current.contains(target)) {
         setIsModelDropdownOpen(false);
+      }
+      if (vinDropdownRef.current && !vinDropdownRef.current.contains(target)) {
+        setIsVinSamplesOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -469,15 +527,70 @@ export function Header({ currentView: _currentView, onNavigate }: HeaderProps) {
             placeholder="Year"
             value={yearQuery}
             onChange={(e) => setYearQuery(e.target.value)}
-            className="w-20 bg-white px-3 py-1.5 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-20 bg-white px-3 py-1.5 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
           />
-          <input
-            type="text"
-            placeholder="VIN (optional)"
-            value={vinQuery}
-            onChange={(e) => setVinQuery(e.target.value)}
-            className="w-28 bg-white px-3 py-1.5 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+          <div ref={vinDropdownRef} className="relative">
+            <input
+              type="text"
+              placeholder="VIN (e.g. 4JGDF...)"
+              value={vinQuery}
+              onChange={(e) => handleVinInputChange(e.target.value)}
+              title="Type a 17-character VIN to auto-fill vehicle make, model and year"
+              className={`w-36 bg-white pl-3 pr-7 py-1.5 rounded-lg text-xs font-mono font-medium tracking-wide placeholder:font-sans placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 uppercase transition-all ${
+                vinDecodeResult?.isValid ? 'text-emerald-700 bg-emerald-50/50 ring-1 ring-emerald-500 font-bold' : 'text-slate-800'
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setIsVinSamplesOpen((prev) => !prev)}
+              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-blue-600 rounded-md hover:bg-slate-100 transition-colors"
+              title="Try sample vehicle VINs"
+              aria-label="Toggle sample VINs"
+            >
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isVinSamplesOpen ? 'rotate-180 text-blue-600' : ''}`} />
+            </button>
+
+            {/* Sample VIN Dropdown menu */}
+            {isVinSamplesOpen && (
+              <div className="absolute top-full right-0 mt-1.5 w-64 bg-white rounded-xl border border-slate-200 shadow-xl z-50 py-1.5 text-xs animate-fadeIn max-h-72 overflow-y-auto">
+                <div className="px-3 py-1 border-b border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span>VIN Decoder Samples</span>
+                  <span className="text-[9px] text-blue-600 font-normal">Click to auto-fill</span>
+                </div>
+                <div className="py-1">
+                  {SAMPLE_VINS.map((sample) => (
+                    <button
+                      key={sample.vin}
+                      type="button"
+                      onClick={() => handleSelectSampleVin(sample)}
+                      className="w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors border-b border-slate-50 last:border-b-0"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 text-xs">{sample.label}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold">{sample.year}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400 tracking-wider block mt-0.5">
+                        {sample.vin}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Decoded Success Popover */}
+            {vinDecodeResult?.isValid && !isVinSamplesOpen && (
+              <div className="absolute top-full right-0 mt-1 flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg text-[11px] font-semibold shadow-md whitespace-nowrap z-40 animate-fadeIn">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span>
+                  VIN Auto-filled: <strong>{vinDecodeResult.year} {vinDecodeResult.make} {vinDecodeResult.model}</strong>
+                </span>
+                {vinDecodeResult.engine && (
+                  <span className="text-emerald-600 text-[10px]">· {vinDecodeResult.engine}</span>
+                )}
+              </div>
+            )}
+          </div>
           <button
             type="submit"
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"

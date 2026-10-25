@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Upload, Check, AlertCircle, Info, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Upload, Check, AlertCircle, Info, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { marketplaceStore } from '../../services/store';
 import { InventoryItem } from '../../types';
 import { VEHICLE_DATA, getAvailableModels, getCanonicalMakeName } from '../../data/vehicleData';
+import { decodeVin, SAMPLE_VINS } from '../../services/vinDecoder';
 import alternatorImg from '../../assets/images/alternator_assembly_1791849520193.jpg';
 
 interface DealerAddPartPageProps {
@@ -14,11 +15,33 @@ interface DealerAddPartPageProps {
 export function DealerAddPartPage({ editItem, onBack, onSaved }: DealerAddPartPageProps) {
   const [partName, setPartName] = useState(editItem ? editItem.partName : 'Alternator assembly');
   const [partNumber, setPartNumber] = useState(editItem ? editItem.partNumber : '27060-0T140');
+  const [vinInput, setVinInput] = useState('');
+  const [vinDecodedMsg, setVinDecodedMsg] = useState('');
   const [compatibleMake, setCompatibleMake] = useState(editItem ? editItem.compatibleMake : 'Toyota');
   const [compatibleModel, setCompatibleModel] = useState(editItem ? editItem.compatibleModel : 'Corolla');
   const [compatibleYear, setCompatibleYear] = useState(editItem ? editItem.compatibleYear : '2014');
   const [compatibleEngine, setCompatibleEngine] = useState(editItem?.compatibleEngine || '1.8L petrol');
   const [condition, setCondition] = useState<InventoryItem['condition']>(editItem ? editItem.condition : 'Used · tested');
+
+  const handleDecodeVin = (val: string) => {
+    const result = decodeVin(val);
+    if (result && result.make) {
+      setCompatibleMake(result.make);
+      if (result.model) setCompatibleModel(result.model);
+      if (result.year) setCompatibleYear(result.year);
+      if (result.engine) setCompatibleEngine(result.engine);
+      setVinDecodedMsg(`Auto-filled: ${result.year} ${result.make} ${result.model}`);
+      setTimeout(() => setVinDecodedMsg(''), 5000);
+    }
+  };
+
+  const handleVinInputChange = (val: string) => {
+    const upper = val.toUpperCase();
+    setVinInput(upper);
+    if (upper.trim().length >= 8) {
+      handleDecodeVin(upper);
+    }
+  };
   const [priceGMD, setPriceGMD] = useState(editItem ? editItem.priceGMD.toString() : '2500');
   const [quantity, setQuantity] = useState(editItem ? editItem.quantity.toString() : '2');
   const [availability, setAvailability] = useState<'available' | 'out_of_stock'>(
@@ -132,6 +155,38 @@ export function DealerAddPartPage({ editItem, onBack, onSaved }: DealerAddPartPa
                 placeholder="27060-0T140"
                 className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
               />
+            </div>
+          </div>
+
+          {/* Optional VIN Decoder for quick vehicle matching */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-mono font-bold">VIN</span>
+                <span>Auto-fill compatibility using vehicle VIN:</span>
+              </label>
+              {vinDecodedMsg && (
+                <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  {vinDecodedMsg}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Enter 17-digit VIN (e.g. 4JGDF7DE5FA198243)"
+                value={vinInput}
+                onChange={(e) => handleVinInputChange(e.target.value)}
+                className="flex-1 bg-white border border-slate-300 rounded-xl px-3.5 py-1.5 text-xs font-mono uppercase text-slate-800 placeholder:font-sans placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={() => handleDecodeVin(vinInput)}
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shrink-0"
+              >
+                Decode
+              </button>
             </div>
           </div>
 

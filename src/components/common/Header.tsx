@@ -17,6 +17,7 @@ import {
   X,
   SlidersHorizontal,
   Sparkles,
+  Truck,
 } from 'lucide-react';
 import { useStore } from '../../hooks/useStore';
 import { marketplaceStore } from '../../services/store';
@@ -258,6 +259,7 @@ export function Header({ currentView: _currentView, onNavigate }: HeaderProps) {
     if (newRole === 'mechanic') onNavigate('dealers');
     if (newRole === 'dealer') onNavigate('dealer_dashboard');
     if (newRole === 'admin') onNavigate('admin_dashboard');
+    if (newRole === 'delivery_rider') onNavigate('delivery_dashboard');
   };
 
   const getWorkspaceTitle = () => {
@@ -268,6 +270,8 @@ export function Header({ currentView: _currentView, onNavigate }: HeaderProps) {
         return 'DEALER WORKSPACE';
       case 'admin':
         return 'ADMIN WORKSPACE';
+      case 'delivery_rider':
+        return 'DELIVERY RIDER WORKSPACE';
       default:
         return 'VEHICLE PORTAL';
     }
@@ -320,6 +324,14 @@ export function Header({ currentView: _currentView, onNavigate }: HeaderProps) {
             <Store className="w-3 h-3" /> Dealer
           </button>
           <button
+            onClick={() => handleRoleChange('delivery_rider')}
+            className={`px-2.5 py-0.5 rounded text-xs flex items-center gap-1 font-medium transition-colors ${
+              role === 'delivery_rider' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+            }`}
+          >
+            <Truck className="w-3 h-3" /> Delivery
+          </button>
+          <button
             onClick={() => handleRoleChange('admin')}
             className={`px-2.5 py-0.5 rounded text-xs flex items-center gap-1 font-medium transition-colors ${
               role === 'admin' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'
@@ -335,7 +347,7 @@ export function Header({ currentView: _currentView, onNavigate }: HeaderProps) {
         <div className="flex items-center justify-between gap-4">
           {/* Logo and Workspace Label */}
           <div
-            onClick={() => onNavigate(role === 'mechanic' ? 'dealers' : role === 'dealer' ? 'dealer_dashboard' : 'admin_dashboard')}
+            onClick={() => onNavigate(role === 'mechanic' ? 'dealers' : role === 'dealer' ? 'dealer_dashboard' : role === 'delivery_rider' ? 'delivery_dashboard' : 'admin_dashboard')}
             className="flex flex-col cursor-pointer shrink-0"
           >
           <div className="flex items-center gap-2">

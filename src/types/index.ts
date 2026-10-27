@@ -1,4 +1,4 @@
-export type UserRole = 'mechanic' | 'dealer' | 'admin' | 'owner';
+export type UserRole = 'mechanic' | 'dealer' | 'admin' | 'owner' | 'delivery_rider';
 
 export interface User {
   id: string;
@@ -157,20 +157,30 @@ export interface Order {
   deliveryAddress?: string;
   deliveryFeeGMD?: number;
   noteToDealer?: string;
+  paymentMethod?: 'wave' | 'qmoney' | 'afrimoney' | 'bank_transfer' | 'cash_on_handover';
+  paymentStatus?: 'paid' | 'pending' | 'cash_on_delivery';
+  paymentPhone?: string;
+  paymentTransactionRef?: string;
+  paidAt?: string;
   status: OrderStatus;
   createdAt: string;
   updatedAt: string;
+  assignedRiderId?: string;
+  courierName?: string;
+  courierPhone?: string;
+  courierVehicle?: string;
+  courierRating?: number;
 }
 
 export interface NotificationItem {
   id: string;
-  targetRole: 'mechanic' | 'dealer' | 'admin';
+  targetRole: 'mechanic' | 'dealer' | 'admin' | 'delivery_rider';
   targetUserId?: string;
   title: string;
   description: string;
   timestamp: string;
   read: boolean;
-  type: 'request' | 'offer' | 'reservation' | 'message' | 'verification' | 'system';
+  type: 'request' | 'offer' | 'reservation' | 'message' | 'verification' | 'system' | 'delivery';
   actionLabel?: string;
   actionView?: string;
   relatedId?: string;
@@ -184,3 +194,53 @@ export interface ActivityLog {
   reference: string;
   status: string;
 }
+
+export interface DeliveryRiderProfile {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  vehicleType: 'Motorcycle' | 'Scooter' | 'Tricycle / Keke' | 'Dispatch Van' | 'Bicycle';
+  plateNumber: string;
+  licenseNumber?: string;
+  primaryZone: string;
+  isOnline: boolean;
+  rating: number;
+  completedDeliveries: number;
+  todayDeliveries: number;
+  todayEarningsGMD: number;
+  totalEarningsGMD: number;
+  joinedDate: string;
+  status: 'active' | 'suspended';
+  avatar?: string;
+}
+
+export interface DeliveryRequestJob {
+  id: string;
+  orderId: string;
+  partName: string;
+  partNumber?: string;
+  weightCategory: 'Light (under 5kg)' | 'Medium (5-15kg)' | 'Heavy (15kg+)';
+  pickupShop: string;
+  pickupAddress: string;
+  pickupPhone: string;
+  pickupLatitude?: number;
+  pickupLongitude?: number;
+  dropoffWorkshop: string;
+  dropoffAddress: string;
+  dropoffPhone: string;
+  dropoffLatitude?: number;
+  dropoffLongitude?: number;
+  distanceKm: number;
+  estimatedMinutes: number;
+  payoutGMD: number;
+  urgency: 'Standard' | 'Express 45-min' | 'Urgent';
+  status: 'available' | 'accepted' | 'picked_up' | 'in_transit' | 'delivered';
+  handoverPin: string;
+  acceptedAt?: string;
+  deliveredAt?: string;
+  notes?: string;
+  assignedRiderId?: string;
+  assignedRiderName?: string;
+}
+

@@ -35,8 +35,15 @@ import { AdminUsersPage } from './components/admin/AdminUsersPage';
 import { AdminRequestsPage } from './components/admin/AdminRequestsPage';
 import { AdminListingsPage } from './components/admin/AdminListingsPage';
 
-// Deliveries
+// Deliveries & Handover
 import { DeliveriesView } from './components/common/DeliveriesView';
+
+// Delivery Rider Views
+import { DeliveryDashboardPage } from './components/delivery/DeliveryDashboardPage';
+import { DeliveryRequestsPage } from './components/delivery/DeliveryRequestsPage';
+import { DeliveryActiveJobsPage } from './components/delivery/DeliveryActiveJobsPage';
+import { DeliveryEarningsPage } from './components/delivery/DeliveryEarningsPage';
+import { DeliveryProfilePage } from './components/delivery/DeliveryProfilePage';
 
 import { DealerProfile, InventoryItem, PartRequest, UserRole } from './types';
 
@@ -54,6 +61,7 @@ export default function App() {
     if (role === 'mechanic') setCurrentView('dealers');
     if (role === 'dealer') setCurrentView('dealer_dashboard');
     if (role === 'admin') setCurrentView('admin_dashboard');
+    if (role === 'delivery_rider') setCurrentView('delivery_dashboard');
   };
 
   const isFullLayoutView = currentView !== 'landing' && currentView !== 'choose_role';
@@ -130,8 +138,13 @@ export default function App() {
               {currentView === 'checkout_pickup' && (
                 <OfferCheckoutPickupPage
                   requestId={selectedRequest?.id || 'REQ-1042'}
+                  offerId={selectedRequest?.selectedOfferId || 'off_burgi_1042'}
                   onBack={() => setCurrentView('dealer_offer_detail')}
                   onConfirmed={() => setCurrentView('requests')}
+                  onTrackOrder={(orderId) => {
+                    setSelectedOrderId(orderId);
+                    setCurrentView('deliveries');
+                  }}
                 />
               )}
 
@@ -163,6 +176,10 @@ export default function App() {
                     const req = store.requests.find((r) => r.id === reqId);
                     if (req) setSelectedRequest(req);
                     setCurrentView('dealer_offer_detail');
+                  }}
+                  onTrackOrder={(orderId) => {
+                    setSelectedOrderId(orderId);
+                    setCurrentView('deliveries');
                   }}
                 />
               )}
@@ -306,6 +323,37 @@ export default function App() {
                 <DeliveriesView
                   initialOrderId={selectedOrderId || undefined}
                   onBack={() => setCurrentView(store.currentRole === 'dealer' ? 'dealer_dashboard' : 'dealers')}
+                />
+              )}
+
+              {/* --- Delivery Rider Views --- */}
+              {currentView === 'delivery_dashboard' && (
+                <DeliveryDashboardPage
+                  onNavigate={(view) => setCurrentView(view)}
+                />
+              )}
+
+              {currentView === 'delivery_requests' && (
+                <DeliveryRequestsPage
+                  onNavigate={(view) => setCurrentView(view)}
+                />
+              )}
+
+              {currentView === 'delivery_active' && (
+                <DeliveryActiveJobsPage
+                  onNavigate={(view) => setCurrentView(view)}
+                />
+              )}
+
+              {currentView === 'delivery_earnings' && (
+                <DeliveryEarningsPage
+                  onNavigate={(view) => setCurrentView(view)}
+                />
+              )}
+
+              {currentView === 'delivery_profile' && (
+                <DeliveryProfilePage
+                  onNavigate={(view) => setCurrentView(view)}
                 />
               )}
 

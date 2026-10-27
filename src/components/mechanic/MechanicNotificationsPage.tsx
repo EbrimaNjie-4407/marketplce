@@ -1,16 +1,27 @@
 import { useState } from 'react';
-import { CheckCheck, MessageSquare, CheckCircle, FileText, Bell } from 'lucide-react';
+import { CheckCheck, MessageSquare, CheckCircle, FileText, Bell, CreditCard, ChevronRight } from 'lucide-react';
 import { useStore } from '../../hooks/useStore';
 import { marketplaceStore } from '../../services/store';
+import { PartRequest, DealerOffer, Order } from '../../types';
+import { OfferReviewAndPaymentModal } from './OfferReviewAndPaymentModal';
 
 interface MechanicNotificationsPageProps {
   onNavigate: (view: string) => void;
   onOpenRequest: (reqId: string) => void;
+  onTrackOrder?: (orderId: string) => void;
 }
 
-export function MechanicNotificationsPage({ onNavigate, onOpenRequest }: MechanicNotificationsPageProps) {
+export function MechanicNotificationsPage({
+  onNavigate,
+  onOpenRequest,
+  onTrackOrder,
+}: MechanicNotificationsPageProps) {
   const store = useStore();
   const [filterTab, setFilterTab] = useState<'all' | 'unread' | 'requests' | 'messages'>('all');
+  const [reviewOfferTarget, setReviewOfferTarget] = useState<{
+    request: PartRequest;
+    offer: DealerOffer;
+  } | null>(null);
 
   const notifications = store.notifications.filter((n) => {
     if (n.targetRole !== 'mechanic') return false;
@@ -28,8 +39,19 @@ export function MechanicNotificationsPage({ onNavigate, onOpenRequest }: Mechani
 
   const handleActionClick = (notif: any) => {
     marketplaceStore.markNotificationRead(notif.id);
+
+    // If it's an offer notification or "View offer" action, open the Offer Review & Payment flow
+    if (notif.type === 'offer' || notif.actionLabel === 'View offer' || notif.actionView === 'responses_compare') {
+      const req = store.requests.find((r) => r.id === notif.relatedId) || store.requests[0];
+      const off = store.offers.find((o) => o.requestId === req.id) || store.offers[0];
+      if (req && off) {
+        setReviewOfferTarget({ request: req, offer: off });
+        return;
+      }
+    }
+
     if (notif.actionView === 'responses_compare') {
-      onNavigate('responses_compare');
+      onNavigate('dealers');
     } else if (notif.relatedId) {
       onOpenRequest(notif.relatedId);
     } else {
@@ -150,9 +172,21 @@ export function MechanicNotificationsPage({ onNavigate, onOpenRequest }: Mechani
                 <div className="shrink-0 self-end sm:self-center">
                   <button
                     onClick={() => handleActionClick(notif)}
-                    className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 rounded-xl text-xs font-bold transition-colors shadow-2xs"
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer ${
+                      notif.type === 'offer' || notif.actionLabel === 'View offer'
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-600/20 active:scale-95'
+                        : 'bg-white hover:bg-slate-50 border border-slate-300 text-slate-800'
+                    }`}
                   >
-                    {notif.actionLabel || 'View status'}
+                    {notif.type === 'offer' || notif.actionLabel === 'View offer' ? (
+                      <>
+                        <CreditCard className="w-3.5 h-3.5 text-blue-200" />
+                        <span>View Offer & Pay</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </>
+                    ) : (
+                      <span>{notif.actionLabel || 'View status'}</span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -160,6 +194,26 @@ export function MechanicNotificationsPage({ onNavigate, onOpenRequest }: Mechani
           </div>
         )}
       </div>
+
+      {/* Offer Review & Payment Modal */}
+      {reviewOfferTarget && (
+        <OfferReviewAndPaymentModal
+          request={reviewOfferTarget.request}
+          offer={reviewOfferTarget.offer}
+          onClose={() => setReviewOfferTarget(null)}
+          onSuccess={(_order) => {
+            // Keep modal open to show official receipt or let user navigate to tracking
+          }}
+          onTrackOrder={(orderId) => {
+            setReviewOfferTarget(null);
+            if (onTrackOrder) {
+              onTrackOrder(orderId);
+            } else {
+              onNavigate('deliveries');
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

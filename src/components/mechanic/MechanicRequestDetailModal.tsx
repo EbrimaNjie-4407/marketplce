@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   X,
   MapPin,
@@ -12,11 +12,13 @@ import {
   Store,
   Layers,
   ChevronRight,
+  CreditCard,
 } from 'lucide-react';
 import { PartRequest, DealerOffer } from '../../types';
 import { useStore } from '../../hooks/useStore';
 import { VoiceNotePlayer } from '../common/VoiceNotePlayer';
 import alternatorImg from '../../assets/images/alternator_assembly_1791849520193.jpg';
+import { OfferReviewAndPaymentModal } from './OfferReviewAndPaymentModal';
 
 interface MechanicRequestDetailModalProps {
   request: PartRequest;
@@ -32,6 +34,7 @@ export function MechanicRequestDetailModal({
   onTrackOrder,
 }: MechanicRequestDetailModalProps) {
   const store = useStore();
+  const [selectedOfferForPayment, setSelectedOfferForPayment] = useState<DealerOffer | null>(null);
 
   // Find offers matching this request
   const offers = store.offers.filter((off) => off.requestId === request.id);
@@ -230,18 +233,29 @@ export function MechanicRequestDetailModal({
                       </span>
                     </div>
 
-                    {onSelectOffer && (
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
-                        onClick={() => {
-                          onClose();
-                          onSelectOffer(off);
-                        }}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
+                        onClick={() => setSelectedOfferForPayment(off)}
+                        className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
-                        <span>Choose</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <CreditCard className="w-3.5 h-3.5" />
+                        <span>Review & Pay</span>
                       </button>
-                    )}
+
+                      {onSelectOffer && (
+                        <button
+                          onClick={() => {
+                            onClose();
+                            onSelectOffer(off);
+                          }}
+                          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1"
+                          title="Configure pickup details"
+                        >
+                          <span>Details</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -264,6 +278,23 @@ export function MechanicRequestDetailModal({
           </button>
         </div>
       </div>
+
+      {/* Review & Pay Modal overlay */}
+      {selectedOfferForPayment && (
+        <OfferReviewAndPaymentModal
+          request={request}
+          offer={selectedOfferForPayment}
+          onClose={() => setSelectedOfferForPayment(null)}
+          onSuccess={(_order) => {
+            // Completed
+          }}
+          onTrackOrder={(orderId) => {
+            setSelectedOfferForPayment(null);
+            onClose();
+            if (onTrackOrder) onTrackOrder(orderId);
+          }}
+        />
+      )}
     </div>
   );
 }

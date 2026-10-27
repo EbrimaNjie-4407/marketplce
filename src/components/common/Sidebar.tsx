@@ -154,6 +154,51 @@ export function Sidebar({ currentView, onNavigate }: SidebarProps) {
       });
     }
 
+    if (role === 'delivery_rider') {
+      const activeJobsCount = store.deliveryJobs.filter(
+        (j) => j.status === 'accepted' || j.status === 'picked_up' || j.status === 'in_transit'
+      ).length;
+      const availableJobsCount = store.deliveryJobs.filter((j) => j.status === 'available').length;
+
+      const links = [
+        { id: 'delivery_dashboard', label: 'Rider Dashboard', icon: LayoutDashboard },
+        { id: 'delivery_requests', label: 'Delivery Requests', icon: FileText, badge: availableJobsCount },
+        { id: 'delivery_active', label: 'Active Dispatches', icon: Truck, badge: activeJobsCount },
+        { id: 'delivery_earnings', label: 'Earnings & Payouts', icon: CheckCircle },
+        { id: 'delivery_profile', label: 'Rider Profile', icon: User },
+      ];
+
+      return links.map((item) => {
+        const Icon = item.icon;
+        const isActive = currentView === item.id;
+        return (
+          <button
+            key={item.id}
+            onClick={() => onNavigate(item.id)}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+              isActive
+                ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                : 'text-blue-100 hover:bg-blue-800/60 hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Icon className="w-4 h-4 shrink-0" />
+              <span>{item.label}</span>
+            </div>
+            {item.badge && item.badge > 0 ? (
+              <span
+                className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+                  isActive ? 'bg-white text-blue-700' : 'bg-emerald-500 text-white'
+                }`}
+              >
+                {item.badge}
+              </span>
+            ) : null}
+          </button>
+        );
+      });
+    }
+
     return null;
   };
 
@@ -169,7 +214,7 @@ export function Sidebar({ currentView, onNavigate }: SidebarProps) {
             <div>
               <h2 className="font-bold text-sm tracking-wide text-white leading-tight">AutoSpares GM</h2>
               <p className="text-[10px] text-blue-200 font-medium tracking-wider uppercase">
-                {role === 'mechanic' ? 'Mechanic Workspace' : role === 'dealer' ? 'Dealer Workspace' : 'Admin Workspace'}
+                {role === 'mechanic' ? 'Mechanic Workspace' : role === 'dealer' ? 'Dealer Workspace' : role === 'delivery_rider' ? 'Dispatch Rider Workspace' : 'Admin Workspace'}
               </p>
             </div>
           </div>
@@ -220,6 +265,15 @@ export function Sidebar({ currentView, onNavigate }: SidebarProps) {
             <div>
               <p className="font-semibold text-white">{store.currentUser.name}</p>
               <p className="text-blue-300 text-[10px]">{store.currentUser.workshopName}</p>
+            </div>
+          )}
+          {role === 'delivery_rider' && (
+            <div>
+              <p className="font-semibold text-white">{store.currentUser.name}</p>
+              <p className="text-emerald-400 text-[10px] flex items-center gap-1 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Active Dispatch Rider · {store.currentUser.location}
+              </p>
             </div>
           )}
           <div className="mt-2 text-[10px] text-blue-300/70">

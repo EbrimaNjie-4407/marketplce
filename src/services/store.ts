@@ -10,6 +10,8 @@ import {
   ActivityLog,
   UserRole,
   DeliveryMethod,
+  DeliveryRiderProfile,
+  DeliveryRequestJob,
 } from '../types';
 
 import alternatorImg from '../assets/images/alternator_assembly_1791849520193.jpg';
@@ -99,7 +101,333 @@ const INITIAL_USERS: User[] = [
     activeRequests: 1,
     completedRequests: 5,
   },
+  {
+    id: 'user_modou',
+    name: 'Modou Lamin Ceesay',
+    role: 'delivery_rider',
+    email: 'modou.rider@autospares.gm',
+    phone: '+220 733 4921',
+    workshopName: 'AutoSpares Express Dispatch',
+    location: 'Jeshwang & Westfield Corridor',
+    joinedDate: '12 May 2026',
+    status: 'active',
+  },
 ];
+
+export const INITIAL_RIDERS: DeliveryRiderProfile[] = [
+  {
+    id: 'rider_modou',
+    name: 'Modou Lamin Ceesay',
+    phone: '+220 733 4921',
+    email: 'modou.rider@autospares.gm',
+    vehicleType: 'Motorcycle',
+    plateNumber: 'BJL-4821-B',
+    primaryZone: 'Jeshwang & Westfield Corridor',
+    isOnline: true,
+    rating: 4.9,
+    completedDeliveries: 38,
+    todayDeliveries: 4,
+    todayEarningsGMD: 520,
+    totalEarningsGMD: 4940,
+    joinedDate: '12 May 2026',
+    status: 'active',
+  },
+  {
+    id: 'rider_bakary',
+    name: 'Bakary Touray',
+    phone: '+220 311 8890',
+    email: 'bakary.touray@autospares.gm',
+    vehicleType: 'Motorcycle',
+    plateNumber: 'KNF-1190-C',
+    primaryZone: 'Greater Banjul & Kanifing',
+    isOnline: true,
+    rating: 4.8,
+    completedDeliveries: 22,
+    todayDeliveries: 2,
+    todayEarningsGMD: 260,
+    totalEarningsGMD: 2860,
+    joinedDate: '02 June 2026',
+    status: 'active',
+  },
+  {
+    id: 'rider_ebrima',
+    name: 'Ebrima Sanyang',
+    phone: '+220 744 6310',
+    email: 'ebrima.sanyang@autospares.gm',
+    vehicleType: 'Scooter',
+    plateNumber: 'BJL-9923-D',
+    primaryZone: 'Westfield & Serrekunda Interchange',
+    isOnline: true,
+    rating: 5.0,
+    completedDeliveries: 45,
+    todayDeliveries: 5,
+    todayEarningsGMD: 650,
+    totalEarningsGMD: 5850,
+    joinedDate: '18 April 2026',
+    status: 'active',
+  },
+  {
+    id: 'rider_pa_omar',
+    name: 'Pa Omar Touray',
+    phone: '+220 912 3456',
+    email: 'paomar.touray@autospares.gm',
+    vehicleType: 'Motorcycle',
+    plateNumber: 'WCR-3108-A',
+    primaryZone: 'Jeshwang Spare Parts Hub & Sukuta',
+    isOnline: true,
+    rating: 4.9,
+    completedDeliveries: 61,
+    todayDeliveries: 3,
+    todayEarningsGMD: 390,
+    totalEarningsGMD: 7930,
+    joinedDate: '05 March 2026',
+    status: 'active',
+  },
+  {
+    id: 'rider_musa',
+    name: 'Musa Jallow',
+    phone: '+220 288 7711',
+    email: 'musa.jallow@autospares.gm',
+    vehicleType: 'Tricycle / Keke',
+    plateNumber: 'BJL-7744-K',
+    primaryZone: 'Kanifing Layout & Bakau',
+    isOnline: true,
+    rating: 4.7,
+    completedDeliveries: 29,
+    todayDeliveries: 2,
+    todayEarningsGMD: 300,
+    totalEarningsGMD: 3770,
+    joinedDate: '24 May 2026',
+    status: 'active',
+  },
+  {
+    id: 'rider_fatou',
+    name: 'Fatoumatta Bah',
+    phone: '+220 765 4321',
+    email: 'fatou.bah@autospares.gm',
+    vehicleType: 'Motorcycle',
+    plateNumber: 'BJL-5521-E',
+    primaryZone: 'Jeshwang Commercial Row & Serrekunda',
+    isOnline: true,
+    rating: 4.95,
+    completedDeliveries: 42,
+    todayDeliveries: 3,
+    todayEarningsGMD: 420,
+    totalEarningsGMD: 5120,
+    joinedDate: '10 Feb 2026',
+    status: 'active',
+  },
+  {
+    id: 'rider_alagie',
+    name: 'Alagie Camara',
+    phone: '+220 380 9944',
+    email: 'alagie.camara@autospares.gm',
+    vehicleType: 'Dispatch Van',
+    plateNumber: 'KM-8812-C',
+    primaryZone: 'Kanifing Industrial Estate & Heavy Spares',
+    isOnline: true,
+    rating: 4.85,
+    completedDeliveries: 78,
+    todayDeliveries: 2,
+    todayEarningsGMD: 550,
+    totalEarningsGMD: 9840,
+    joinedDate: '14 Jan 2026',
+    status: 'active',
+  },
+  {
+    id: 'rider_lamin',
+    name: 'Lamin Badjie',
+    phone: '+220 901 2345',
+    email: 'lamin.badjie@autospares.gm',
+    vehicleType: 'Motorcycle',
+    plateNumber: 'WCR-9012-B',
+    primaryZone: 'Sukuta & Brusubi Highway',
+    isOnline: false,
+    rating: 4.8,
+    completedDeliveries: 53,
+    todayDeliveries: 0,
+    todayEarningsGMD: 0,
+    totalEarningsGMD: 6710,
+    joinedDate: '19 March 2026',
+    status: 'active',
+  },
+];
+
+export const INITIAL_DELIVERY_JOBS: DeliveryRequestJob[] = [
+  {
+    id: 'JOB-DEL-101',
+    orderId: 'ORD-7021',
+    partName: 'Alternator 90A (Toyota Corolla 2015)',
+    partNumber: '27060-0T010',
+    weightCategory: 'Medium (5-15kg)',
+    pickupShop: 'Burgi Spare Parts',
+    pickupAddress: 'Shop 18, Jeshwang Spare Parts Hub, Serekunda',
+    pickupPhone: '+220 724 5550',
+    pickupLatitude: 13.4385,
+    pickupLongitude: -16.6712,
+    dropoffWorkshop: 'Mensah Auto Works',
+    dropoffAddress: 'Workshop 4, Westfield Junction, Serrekunda',
+    dropoffPhone: '+220 745 5010',
+    dropoffLatitude: 13.4478,
+    dropoffLongitude: -16.6805,
+    distanceKm: 3.2,
+    estimatedMinutes: 14,
+    payoutGMD: 120,
+    urgency: 'Express 45-min',
+    status: 'in_transit',
+    handoverPin: '4819',
+    acceptedAt: '12 mins ago',
+    notes: 'Fragile electrical component in sealed bubble carton. Call Kwame upon arrival at Westfield.',
+    assignedRiderId: 'rider_modou',
+    assignedRiderName: 'Modou Lamin Ceesay',
+  },
+  {
+    id: 'JOB-DEL-102',
+    orderId: 'ORD-7022',
+    partName: 'Front Ceramic Brake Pads (Camry 2016)',
+    partNumber: '04465-33471',
+    weightCategory: 'Light (under 5kg)',
+    pickupShop: 'City Auto Spares',
+    pickupAddress: 'Plot 24, Kairaba Avenue, Fajara',
+    pickupPhone: '+220 788 1234',
+    pickupLatitude: 13.4612,
+    pickupLongitude: -16.6791,
+    dropoffWorkshop: 'Njie Auto Diagnostics',
+    dropoffAddress: 'Jeshwang Industrial Area Bay 3',
+    dropoffPhone: '+220 398 1142',
+    dropoffLatitude: 13.439,
+    dropoffLongitude: -16.6698,
+    distanceKm: 2.7,
+    estimatedMinutes: 11,
+    payoutGMD: 100,
+    urgency: 'Standard',
+    status: 'available',
+    handoverPin: '6320',
+    notes: 'Parts boxed and paid via Wave. Counter staff have parcel tagged for AutoSpares dispatch.',
+  },
+  {
+    id: 'JOB-DEL-103',
+    orderId: 'ORD-7023',
+    partName: 'OEM Aluminum Radiator Cooling Unit (Nissan Navara)',
+    partNumber: '21460-EB300',
+    weightCategory: 'Heavy (15kg+)',
+    pickupShop: 'Banjul German Motors',
+    pickupAddress: 'Kanifing Industrial Estate Yard B',
+    pickupPhone: '+220 711 0099',
+    pickupLatitude: 13.449,
+    pickupLongitude: -16.663,
+    dropoffWorkshop: 'Boateng Auto Services',
+    dropoffAddress: 'Brikama Highway Junction, Latrikunda',
+    dropoffPhone: '+220 789 4455',
+    dropoffLatitude: 13.421,
+    dropoffLongitude: -16.685,
+    distanceKm: 7.9,
+    estimatedMinutes: 26,
+    payoutGMD: 180,
+    urgency: 'Express 45-min',
+    status: 'in_transit',
+    handoverPin: '9152',
+    acceptedAt: '18 mins ago',
+    assignedRiderId: 'rider_musa',
+    assignedRiderName: 'Musa Jallow',
+    notes: 'Requires rear rack bungee cords or dispatch carrier box. Verified leak-free test cert included.',
+  },
+  {
+    id: 'JOB-DEL-104',
+    orderId: 'ORD-7024',
+    partName: 'Full Timing Belt & Tensioner Kit (Mitsubishi L200)',
+    partNumber: '1145A019-KIT',
+    weightCategory: 'Light (under 5kg)',
+    pickupShop: 'Kairaba Parts Depot',
+    pickupAddress: 'Westfield Central Commercial Row',
+    pickupPhone: '+220 733 9988',
+    pickupLatitude: 13.4475,
+    pickupLongitude: -16.6802,
+    dropoffWorkshop: 'Asare Workshop',
+    dropoffAddress: 'Kanifing Layout Block 7',
+    dropoffPhone: '+220 711 2233',
+    dropoffLatitude: 13.453,
+    dropoffLongitude: -16.669,
+    distanceKm: 2.1,
+    estimatedMinutes: 9,
+    payoutGMD: 110,
+    urgency: 'Standard',
+    status: 'available',
+    handoverPin: '5741',
+    notes: 'Compact parcel ready at desk. Quick dispatch requested.',
+  },
+  {
+    id: 'JOB-DEL-105',
+    orderId: 'ORD-7025',
+    partName: 'High-Pressure Fuel Pump (Mercedes W204 C200)',
+    partNumber: 'A2710702201',
+    weightCategory: 'Medium (5-15kg)',
+    pickupShop: 'Burgi Spare Parts',
+    pickupAddress: 'Shop 18, Jeshwang Spare Parts Hub, Serekunda',
+    pickupPhone: '+220 724 5550',
+    pickupLatitude: 13.4385,
+    pickupLongitude: -16.6712,
+    dropoffWorkshop: 'Ceesay Precision Garage',
+    dropoffAddress: 'Senegambia Strip, Kololi Coastal Rd',
+    dropoffPhone: '+220 755 4321',
+    dropoffLatitude: 13.441,
+    dropoffLongitude: -16.719,
+    distanceKm: 5.4,
+    estimatedMinutes: 18,
+    payoutGMD: 150,
+    urgency: 'Urgent',
+    status: 'available',
+    handoverPin: '8203',
+    notes: 'Customer car waiting on ramp. High priority delivery.',
+  },
+  {
+    id: 'JOB-DEL-099',
+    orderId: 'ORD-7019',
+    partName: 'Front Gas Shock Absorber Pair (Hyundai Elantra)',
+    partNumber: '54651-3X250',
+    weightCategory: 'Medium (5-15kg)',
+    pickupShop: 'Burgi Spare Parts',
+    pickupAddress: 'Shop 18, Jeshwang Spare Parts Hub',
+    pickupPhone: '+220 724 5550',
+    dropoffWorkshop: 'Mensah Auto Works',
+    dropoffAddress: 'Westfield Junction, Serrekunda',
+    dropoffPhone: '+220 745 5010',
+    distanceKm: 3.2,
+    estimatedMinutes: 15,
+    payoutGMD: 130,
+    urgency: 'Standard',
+    status: 'delivered',
+    handoverPin: '3109',
+    acceptedAt: '2 hours ago',
+    deliveredAt: 'Today · 11:20 AM',
+    assignedRiderId: 'rider_modou',
+    assignedRiderName: 'Modou Lamin Ceesay',
+  },
+  {
+    id: 'JOB-DEL-098',
+    orderId: 'ORD-7018',
+    partName: 'Water Pump & Thermostat Gasket (Toyota RAV4)',
+    partNumber: '16100-29085',
+    weightCategory: 'Light (under 5kg)',
+    pickupShop: 'City Auto Spares',
+    pickupAddress: 'Kairaba Avenue, Fajara',
+    pickupPhone: '+220 788 1234',
+    dropoffWorkshop: 'Asare Workshop',
+    dropoffAddress: 'Kanifing Layout Block 7',
+    dropoffPhone: '+220 711 2233',
+    distanceKm: 2.8,
+    estimatedMinutes: 12,
+    payoutGMD: 110,
+    urgency: 'Standard',
+    status: 'delivered',
+    handoverPin: '7920',
+    acceptedAt: '4 hours ago',
+    deliveredAt: 'Today · 9:45 AM',
+    assignedRiderId: 'rider_modou',
+    assignedRiderName: 'Modou Lamin Ceesay',
+  },
+];
+
 
 const INITIAL_DEALERS: DealerProfile[] = [
   {
@@ -1105,6 +1433,8 @@ export interface MarketplaceState {
   notifications: NotificationItem[];
   applications: DealerApplication[];
   activityLogs: ActivityLog[];
+  deliveryRiders: DeliveryRiderProfile[];
+  deliveryJobs: DeliveryRequestJob[];
   searchQuery: {
     part: string;
     make: string;
@@ -1142,6 +1472,14 @@ class Store {
           } else {
             parsed.inventory = INITIAL_INVENTORY;
           }
+
+          if (!parsed.deliveryRiders || !Array.isArray(parsed.deliveryRiders) || parsed.deliveryRiders.length < INITIAL_RIDERS.length) {
+            parsed.deliveryRiders = INITIAL_RIDERS;
+          }
+          if (!parsed.deliveryJobs || !Array.isArray(parsed.deliveryJobs) || parsed.deliveryJobs.length < INITIAL_DELIVERY_JOBS.length) {
+            parsed.deliveryJobs = INITIAL_DELIVERY_JOBS;
+          }
+
           return parsed;
         }
       }
@@ -1162,6 +1500,8 @@ class Store {
       notifications: INITIAL_NOTIFICATIONS,
       applications: INITIAL_APPLICATIONS,
       activityLogs: INITIAL_ACTIVITY,
+      deliveryRiders: INITIAL_RIDERS,
+      deliveryJobs: INITIAL_DELIVERY_JOBS,
       searchQuery: {
         part: '',
         make: '',
@@ -1198,6 +1538,18 @@ class Store {
       this.state.currentUser = this.state.users.find((u) => u.role === 'dealer') || INITIAL_USERS[2];
     } else if (role === 'admin') {
       this.state.currentUser = this.state.users.find((u) => u.role === 'admin') || INITIAL_USERS[3];
+    } else if (role === 'delivery_rider') {
+      this.state.currentUser = this.state.users.find((u) => u.role === 'delivery_rider') || {
+        id: 'user_modou',
+        name: 'Modou Lamin Ceesay',
+        role: 'delivery_rider',
+        email: 'modou.rider@autospares.gm',
+        phone: '+220 733 4921',
+        workshopName: 'AutoSpares Express Dispatch',
+        location: 'Jeshwang & Westfield Corridor',
+        joinedDate: '12 May 2026',
+        status: 'active',
+      };
     }
     this.persist();
   }
@@ -1205,6 +1557,180 @@ class Store {
   public setSearchQuery(query: Partial<MarketplaceState['searchQuery']>) {
     this.state.searchQuery = { ...this.state.searchQuery, ...query };
     this.persist();
+  }
+
+  // --- Delivery Rider Actions ---
+  public registerDeliveryRider(data: {
+    name: string;
+    phone: string;
+    email?: string;
+    vehicleType: 'Motorcycle' | 'Scooter' | 'Tricycle / Keke' | 'Dispatch Van' | 'Bicycle';
+    plateNumber: string;
+    licenseNumber?: string;
+    primaryZone: string;
+  }): DeliveryRiderProfile {
+    const riderId = `rider_${Date.now()}`;
+    const newRider: DeliveryRiderProfile = {
+      id: riderId,
+      name: data.name,
+      phone: data.phone,
+      email: data.email || `${data.name.toLowerCase().replace(/\s+/g, '.')}@autospares.gm`,
+      vehicleType: data.vehicleType,
+      plateNumber: data.plateNumber.toUpperCase(),
+      licenseNumber: data.licenseNumber,
+      primaryZone: data.primaryZone,
+      isOnline: true,
+      rating: 5.0,
+      completedDeliveries: 0,
+      todayDeliveries: 0,
+      todayEarningsGMD: 0,
+      totalEarningsGMD: 0,
+      joinedDate: 'Today',
+      status: 'active',
+    };
+
+    this.state.deliveryRiders.unshift(newRider);
+
+    const userObj: User = {
+      id: `user_${riderId}`,
+      name: data.name,
+      role: 'delivery_rider',
+      email: newRider.email,
+      phone: data.phone,
+      workshopName: `${data.vehicleType} Dispatch (${data.plateNumber})`,
+      location: data.primaryZone,
+      joinedDate: 'Today',
+      status: 'active',
+    };
+    this.state.users.unshift(userObj);
+    this.state.currentUser = userObj;
+    this.state.currentRole = 'delivery_rider';
+
+    // Activity Log
+    this.state.activityLogs.unshift({
+      id: `act_${Date.now()}`,
+      time: 'Just now',
+      activity: 'New rider onboarded',
+      userOrBusiness: data.name,
+      reference: newRider.plateNumber,
+      status: 'Rider Ready',
+    });
+
+    // Notification
+    this.state.notifications.unshift({
+      id: `notif_${Date.now()}`,
+      targetRole: 'delivery_rider',
+      targetUserId: userObj.id,
+      title: 'Welcome to AutoSpares Delivery Dispatch!',
+      description: `Your rider account is active for ${data.primaryZone}. Browse nearby part requests and start earning.`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'delivery',
+      actionLabel: 'View Requests',
+      actionView: 'delivery_requests',
+    });
+
+    this.persist();
+    return newRider;
+  }
+
+  public getActiveRider(): DeliveryRiderProfile {
+    const currentUserId = this.state.currentUser.id;
+    const byUser = this.state.deliveryRiders.find(
+      (r) => r.id === currentUserId || `user_${r.id}` === currentUserId || r.phone === this.state.currentUser.phone
+    );
+    return byUser || this.state.deliveryRiders[0] || INITIAL_RIDERS[0];
+  }
+
+  public toggleRiderOnlineStatus(riderId?: string) {
+    const active = riderId ? this.state.deliveryRiders.find((r) => r.id === riderId) : this.getActiveRider();
+    if (active) {
+      active.isOnline = !active.isOnline;
+      this.persist();
+    }
+  }
+
+  public acceptDeliveryJob(jobId: string, riderId?: string): boolean {
+    const job = this.state.deliveryJobs.find((j) => j.id === jobId);
+    if (!job || job.status !== 'available') return false;
+
+    const rider = (riderId ? this.state.deliveryRiders.find((r) => r.id === riderId) : undefined) || this.getActiveRider();
+    job.status = 'accepted';
+    job.acceptedAt = 'Just now';
+    job.assignedRiderId = rider.id;
+    job.assignedRiderName = rider.name;
+
+    // Notify mechanic
+    this.state.notifications.unshift({
+      id: `notif_${Date.now()}`,
+      targetRole: 'mechanic',
+      title: `Rider assigned for ${job.partName}`,
+      description: `${rider.name} (${rider.vehicleType} · ${rider.phone}) accepted delivery dispatch from ${job.pickupShop}.`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'delivery',
+      actionLabel: 'Track Delivery',
+      actionView: 'deliveries',
+      relatedId: job.orderId,
+    });
+
+    // Notify dealer
+    this.state.notifications.unshift({
+      id: `notif_${Date.now() + 1}`,
+      targetRole: 'dealer',
+      title: `Rider arriving soon for pickup`,
+      description: `${rider.name} (${rider.phone}) is en route to collect ${job.partName}.`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'delivery',
+      actionLabel: 'View Dispatch',
+      actionView: 'dealer_deliveries',
+      relatedId: job.orderId,
+    });
+
+    this.persist();
+    return true;
+  }
+
+  public updateDeliveryJobStatus(jobId: string, newStatus: DeliveryRequestJob['status'], pinEntered?: string): { success: boolean; message?: string } {
+    const job = this.state.deliveryJobs.find((j) => j.id === jobId);
+    if (!job) return { success: false, message: 'Job not found' };
+
+    const rider = this.getActiveRider();
+
+    if (newStatus === 'delivered') {
+      if (pinEntered && pinEntered.trim() !== job.handoverPin) {
+        return { success: false, message: `Incorrect verification PIN. Please verify with ${job.dropoffWorkshop}.` };
+      }
+      job.status = 'delivered';
+      job.deliveredAt = 'Just now';
+      rider.completedDeliveries += 1;
+      rider.todayDeliveries += 1;
+      rider.todayEarningsGMD += job.payoutGMD;
+      rider.totalEarningsGMD += job.payoutGMD;
+
+      // Update order if matched
+      const order = this.state.orders.find((o) => o.id === job.orderId);
+      if (order) {
+        order.status = 'delivered';
+      }
+
+      this.state.notifications.unshift({
+        id: `notif_${Date.now()}`,
+        targetRole: 'delivery_rider',
+        targetUserId: this.state.currentUser.id,
+        title: `Dispatch Completed: +D${job.payoutGMD} GMD`,
+        description: `Successfully delivered ${job.partName} to ${job.dropoffWorkshop}. Payout added to your balance.`,
+        timestamp: 'Just now',
+        read: false,
+        type: 'delivery',
+      });
+    } else {
+      job.status = newStatus;
+    }
+
+    this.persist();
+    return { success: true };
   }
 
   // --- Mechanic Actions ---
@@ -1313,6 +1839,10 @@ class Store {
       deliveryAddress?: string;
       deliveryFeeGMD?: number;
       noteToDealer?: string;
+      paymentMethod?: 'wave' | 'qmoney' | 'afrimoney' | 'bank_transfer' | 'cash_on_handover';
+      paymentStatus?: 'paid' | 'pending' | 'cash_on_delivery';
+      paymentPhone?: string;
+      paymentTransactionRef?: string;
     }
   ): Order {
     const request = this.state.requests.find((r) => r.id === requestId);
@@ -1344,6 +1874,11 @@ class Store {
       deliveryAddress: options.deliveryAddress,
       deliveryFeeGMD: options.deliveryFeeGMD || 0,
       noteToDealer: options.noteToDealer,
+      paymentMethod: options.paymentMethod || 'cash_on_handover',
+      paymentStatus: options.paymentStatus || 'pending',
+      paymentPhone: options.paymentPhone,
+      paymentTransactionRef: options.paymentTransactionRef || `REF-${Math.floor(100000 + Math.random() * 900000)}`,
+      paidAt: options.paymentStatus === 'paid' ? 'Just now' : undefined,
       status: 'confirmed',
       createdAt: 'Just now',
       updatedAt: 'Just now',
@@ -1528,6 +2063,112 @@ class Store {
 
       this.persist();
     }
+  }
+
+  public assignRiderToOrder(orderId: string, riderId: string): { order: Order; rider: DeliveryRiderProfile } {
+    const order = this.state.orders.find((o) => o.id === orderId);
+    const rider = this.state.deliveryRiders.find((r) => r.id === riderId) || this.state.deliveryRiders[0];
+    if (!order) throw new Error('Order not found');
+
+    order.assignedRiderId = rider.id;
+    order.courierName = rider.name;
+    order.courierPhone = rider.phone;
+    order.courierVehicle = `${rider.vehicleType} (${rider.plateNumber})`;
+    order.courierRating = rider.rating;
+    order.status = 'in_transit';
+    order.updatedAt = 'Just now';
+
+    // Link or create delivery job
+    let job = this.state.deliveryJobs.find((j) => j.orderId === order.id);
+    if (!job) {
+      job = {
+        id: `JOB-DEL-${Date.now().toString().slice(-4)}`,
+        orderId: order.id,
+        partName: order.partName,
+        partNumber: order.partNumber || 'OEM-PART',
+        weightCategory: 'Medium (5-15kg)',
+        pickupShop: order.dealerName,
+        pickupAddress: order.dealerLocation,
+        pickupPhone: '+220 724 5550',
+        dropoffWorkshop: order.mechanicName ? `${order.mechanicName}'s Workshop` : 'Mechanic Workshop',
+        dropoffAddress: order.deliveryAddress || 'Westfield Junction, Serrekunda',
+        dropoffPhone: order.mechanicPhone || '+220 745 5010',
+        distanceKm: 3.4,
+        estimatedMinutes: 16,
+        payoutGMD: order.deliveryFeeGMD || 120,
+        urgency: 'Express 45-min',
+        status: 'in_transit',
+        handoverPin: '8429',
+        acceptedAt: 'Just now',
+        assignedRiderId: rider.id,
+        assignedRiderName: rider.name,
+        notes: 'Dispatched directly from deliveries console. Fast delivery requested.',
+      };
+      this.state.deliveryJobs.unshift(job);
+    } else {
+      job.assignedRiderId = rider.id;
+      job.assignedRiderName = rider.name;
+      job.status = 'in_transit';
+      job.acceptedAt = 'Just now';
+    }
+
+    // 1. Notify the delivery rider
+    this.state.notifications.unshift({
+      id: `notif_${Date.now()}`,
+      targetRole: 'delivery_rider',
+      targetUserId: `user_${rider.id}`,
+      title: `🚨 New Dispatch Assigned: ${order.partName}`,
+      description: `Pickup from ${order.dealerName} (${order.dealerLocation}) and deliver to ${order.deliveryAddress || 'Westfield'}. Handover PIN: 8429.`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'delivery',
+      actionLabel: 'Open Active Job',
+      actionView: 'delivery_active',
+      relatedId: order.id,
+    });
+
+    // 2. Notify the mechanic
+    this.state.notifications.unshift({
+      id: `notif_${Date.now() + 1}`,
+      targetRole: 'mechanic',
+      targetUserId: order.mechanicId,
+      title: `Delivery Rider Dispatched!`,
+      description: `${rider.name} (${rider.vehicleType} · ${rider.plateNumber}) accepted dispatch and is en route to collect your ${order.partName}.`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'delivery',
+      actionLabel: 'Track Live Delivery',
+      actionView: 'deliveries',
+      relatedId: order.id,
+    });
+
+    // 3. Notify the dealer
+    this.state.notifications.unshift({
+      id: `notif_${Date.now() + 2}`,
+      targetRole: 'dealer',
+      targetUserId: order.dealerId,
+      title: `Rider En Route for Pickup`,
+      description: `${rider.name} (${rider.phone}) is heading to your counter for order ${order.id}.`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'delivery',
+      actionLabel: 'View Dispatch',
+      actionView: 'dealer_deliveries',
+      relatedId: order.id,
+    });
+
+    // 4. Log activity
+    this.state.activityLogs.unshift({
+      id: `act_${Date.now()}`,
+      time: 'Just now',
+      activity: 'Courier dispatched',
+      userOrBusiness: rider.name,
+      reference: order.id,
+      status: 'In Transit',
+    });
+
+    this.persist();
+    return { order, rider };
   }
 
   // --- Admin Actions ---

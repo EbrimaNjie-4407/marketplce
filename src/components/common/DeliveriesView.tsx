@@ -25,10 +25,19 @@ import {
   Sparkles,
   ArrowLeft,
   X,
+  Star,
+  Radio,
+  Send,
+  UserCheck,
+  RefreshCw,
+  Search,
+  AlertCircle,
+  Zap,
+  Filter,
 } from 'lucide-react';
 import { useStore } from '../../hooks/useStore';
 import { marketplaceStore } from '../../services/store';
-import { Order, OrderStatus } from '../../types';
+import { Order, OrderStatus, DeliveryRiderProfile } from '../../types';
 import { DeliveryProgressionMap, ROUTE_WAYPOINTS } from './DeliveryProgressionMap';
 import alternatorImg from '../../assets/images/alternator_assembly_1791849520193.jpg';
 
@@ -86,6 +95,159 @@ export function DeliveriesView({ initialOrderId, onBack }: DeliveriesViewProps) 
     noTransitDamage: true,
     connectorsIntact: true,
   });
+
+  // Delivery Rider Selection & Availability Filter state
+  const [riderFilter, setRiderFilter] = useState<
+    'all' | 'available' | 'busy' | 'offline' | 'jeshwang' | 'kanifing' | 'motorcycle'
+  >('all');
+  const [riderSearchQuery, setRiderSearchQuery] = useState<string>('');
+
+  // Real-time system availability detection engine for every Gambian courier
+  const getRiderSystemStatus = (rider: DeliveryRiderProfile) => {
+    const isAssignedToThisOrder =
+      selectedOrder?.assignedRiderId === rider.id ||
+      selectedOrder?.courierName === rider.name;
+
+    const activeJob = store.deliveryJobs.find(
+      (j) => j.assignedRiderId === rider.id && (j.status === 'in_transit' || j.status === 'accepted')
+    );
+
+    if (isAssignedToThisOrder) {
+      return {
+        type: 'assigned_this_order' as const,
+        isAvailable: false,
+        badgeText: 'Assigned to This Order',
+        badgeClass: 'bg-blue-600 text-white shadow-xs',
+        dotClass: 'bg-emerald-400 animate-pulse',
+        statusText: `Dispatched & in transit from ${selectedOrder.dealerName} to workshop bay`,
+        activeJob,
+        pickupEta: '~2-4 min arrival',
+      };
+    }
+
+    if (!rider.isOnline) {
+      return {
+        type: 'offline' as const,
+        isAvailable: false,
+        badgeText: 'Offline · Off Duty',
+        badgeClass: 'bg-slate-100 text-slate-500 border border-slate-200',
+        dotClass: 'bg-slate-400',
+        statusText: 'Rider is logged off and not accepting dispatches right now',
+        activeJob: undefined,
+        pickupEta: 'Off shift',
+      };
+    }
+
+    if (activeJob) {
+      return {
+        type: 'busy' as const,
+        isAvailable: false,
+        badgeText: 'Busy · On Active Run',
+        badgeClass: 'bg-amber-100 text-amber-800 border border-amber-300',
+        dotClass: 'bg-amber-500 animate-ping',
+        statusText: `Delivering ${activeJob.partName.slice(0, 26)}... (Job #${activeJob.id}) to ${activeJob.dropoffWorkshop}`,
+        activeJob,
+        pickupEta: `Est. free in ~${activeJob.estimatedMinutes || 15} mins`,
+      };
+    }
+
+    return {
+      type: 'available' as const,
+      isAvailable: true,
+      badgeText: 'Available & Ready for Pickup',
+      badgeClass: 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold shadow-2xs',
+      dotClass: 'bg-emerald-500 animate-ping',
+      statusText: `Idle at ${rider.primaryZone} · Verified ready for instant dispatch`,
+      activeJob: undefined,
+      pickupEta: rider.vehicleType === 'Motorcycle' ? '~3-6 mins' : '~6-10 mins',
+    };
+  };
+
+  // Fleet System Telemetry Summary
+  const fleetSummary = {
+    total: store.deliveryRiders.length,
+    available: store.deliveryRiders.filter((r) => getRiderSystemStatus(r).type === 'available').length,
+    assigned: store.deliveryRiders.filter((r) => getRiderSystemStatus(r).type === 'assigned_this_order').length,
+    busy: store.deliveryRiders.filter((r) => getRiderSystemStatus(r).type === 'busy').length,
+    offline: store.deliveryRiders.filter((r) => getRiderSystemStatus(r).type === 'offline').length,
+  };
+
+  // Filtered and Sorted Rider list
+  const filteredRiders = store.deliveryRiders
+    .filter((r) => {
+      const statusInfo = getRiderSystemStatus(r);
+
+      // Search query filter
+      if (riderSearchQuery.trim()) {
+        const q = riderSearchQuery.toLowerCase();
+        const matchName = r.name.toLowerCase().includes(q);
+        const matchZone = r.primaryZone.toLowerCase().includes(q);
+        const matchVeh =
+          r.vehicleType.toLowerCase().includes(q) || r.plateNumber.toLowerCase().includes(q);
+        if (!matchName && !matchZone && !matchVeh) return false;
+      }
+
+      // Filter tabs
+      if (riderFilter === 'available') {
+        return statusInfo.type === 'available';
+      }
+      if (riderFilter === 'busy') {
+        return statusInfo.type === 'busy' || statusInfo.type === 'assigned_this_order';
+      }
+      if (riderFilter === 'offline') {
+        return statusInfo.type === 'offline';
+      }
+      if (riderFilter === 'jeshwang') {
+        return (
+          r.primaryZone.toLowerCase().includes('jeshwang') ||
+          r.primaryZone.toLowerCase().includes('sukuta') ||
+          r.primaryZone.toLowerCase().includes('westfield')
+        );
+      }
+      if (riderFilter === 'kanifing') {
+        return (
+          r.primaryZone.toLowerCase().includes('kanifing') ||
+          r.primaryZone.toLowerCase().includes('banjul') ||
+          r.primaryZone.toLowerCase().includes('bakau')
+        );
+      }
+      if (riderFilter === 'motorcycle') {
+        return (
+          r.vehicleType.toLowerCase().includes('motorcycle') ||
+          r.vehicleType.toLowerCase().includes('scooter')
+        );
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const orderMap: Record<string, number> = {
+        assigned_this_order: 0,
+        available: 1,
+        busy: 2,
+        offline: 3,
+      };
+      const statusA = getRiderSystemStatus(a).type;
+      const statusB = getRiderSystemStatus(b).type;
+      return (orderMap[statusA] ?? 99) - (orderMap[statusB] ?? 99);
+    });
+
+  // Currently assigned rider for this order
+  const assignedRider =
+    store.deliveryRiders.find((r) => r.id === selectedOrder?.assignedRiderId) ||
+    store.deliveryRiders.find((r) => r.name === selectedOrder?.courierName) ||
+    store.deliveryRiders[0];
+
+  const handleSelectAndDispatchRider = (rider: DeliveryRiderProfile) => {
+    if (!selectedOrder) return;
+    const res = marketplaceStore.assignRiderToOrder(selectedOrder.id, rider.id);
+    setSelectedOrder({ ...res.order });
+    setProgressPercent(20);
+    setIsPlaying(true);
+    setCourierSpeed(38);
+    showToast(
+      `🚀 ${rider.name} selected & notified! They are en route to collect ${selectedOrder.partName} from ${selectedOrder.dealerName}.`
+    );
+  };
 
   // Calculate ETA minutes based on remaining progress
   const etaMinutes = Math.max(1, Math.round(((100 - progressPercent) / 100) * 22));
@@ -275,8 +437,11 @@ export function DeliveriesView({ initialOrderId, onBack }: DeliveriesViewProps) 
           mechanicWorkshop={
             associatedRequest?.workshopName || 'Mensah Auto Works, Westfield Junction'
           }
-          courierName="Lamin Touray"
-          courierVehicle="Honda CG125 Cargo (BJL 8421 X)"
+          courierName={selectedOrder?.courierName || assignedRider?.name || 'Modou Lamin Ceesay'}
+          courierVehicle={
+            selectedOrder?.courierVehicle ||
+            `${assignedRider?.vehicleType || 'Motorcycle'} (${assignedRider?.plateNumber || 'BJL-4821-B'})`
+          }
           courierSpeedKmH={courierSpeed}
           etaMinutes={etaMinutes}
           isDelivered={isDelivered}
@@ -441,37 +606,50 @@ export function DeliveriesView({ initialOrderId, onBack }: DeliveriesViewProps) 
             {/* Courier Dispatch Profile Card */}
             <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200/60 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold text-blue-800 tracking-wider">
-                  Assigned Auto Courier
+                <span className="text-[10px] uppercase font-bold text-blue-800 tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span>Assigned Auto Courier</span>
                 </span>
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
-                  ★ 4.9 (340 deliveries)
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <Star className="w-3 h-3 fill-emerald-600 text-emerald-600" />
+                  {assignedRider ? assignedRider.rating.toFixed(1) : '4.9'} ({assignedRider ? assignedRider.completedDeliveries : 38} trips)
                 </span>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white font-extrabold flex items-center justify-center text-base shadow-sm">
-                  LT
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-extrabold flex items-center justify-center text-base shadow-sm shrink-0">
+                  {assignedRider ? assignedRider.name.split(' ').map((n) => n[0]).slice(0, 2).join('') : 'MC'}
                 </div>
-                <div className="space-y-0.5">
-                  <h4 className="text-sm font-bold text-slate-900">Lamin Touray</h4>
-                  <p className="text-xs text-slate-600 flex items-center gap-1">
-                    <Truck className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Honda CG125 Cargo · Reg: BJL 8421 X</span>
+                <div className="space-y-0.5 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h4 className="text-sm font-bold text-slate-900 truncate">
+                      {assignedRider ? assignedRider.name : 'Modou Lamin Ceesay'}
+                    </h4>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                      Dispatched
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 flex items-center gap-1 truncate">
+                    <Truck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span>{assignedRider ? assignedRider.vehicleType : 'Motorcycle'} · Reg: {assignedRider ? assignedRider.plateNumber : 'BJL-4821-B'}</span>
+                  </p>
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1 truncate">
+                    <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                    <span>{assignedRider ? assignedRider.primaryZone : 'Jeshwang & Westfield'}</span>
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 pt-2 border-t border-blue-200/50">
                 <a
-                  href="tel:+2207123456"
+                  href={`tel:${assignedRider ? assignedRider.phone : '+2207334921'}`}
                   className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs"
                 >
                   <Phone className="w-3.5 h-3.5" />
-                  <span>Call Lamin</span>
+                  <span>Call {assignedRider ? assignedRider.name.split(' ')[0] : 'Courier'}</span>
                 </a>
                 <button
-                  onClick={() => showToast('Messaging channel open with courier Lamin')}
+                  onClick={() => showToast(`Messaging channel open with courier ${assignedRider ? assignedRider.name : 'Modou'}`)}
                   className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-blue-200 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
                 >
                   <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
@@ -548,8 +726,461 @@ export function DeliveriesView({ initialOrderId, onBack }: DeliveriesViewProps) 
           </div>
         </div>
 
-        {/* Right Column (7 cols): Progression Milestones Timeline & Inspection */}
+        {/* Right Column (7 cols): Available Delivery Riders & Dispatch + Progression Milestones Timeline */}
         <div className="lg:col-span-7 space-y-6">
+          {/* Available Delivery Riders & Dispatch Fleet Console */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 sm:p-7 space-y-5">
+            {/* Console Header */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider">
+                    AutoSpares Express Dispatch Fleet
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    Live System Availability
+                  </span>
+                </div>
+                <h3 className="text-xl font-extrabold text-slate-900 mt-1">
+                  Choose a Delivery Rider for This Order
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Select a verified courier from the list. The system actively detects which riders are{' '}
+                  <span className="font-bold text-emerald-700">Available</span>,{' '}
+                  <span className="font-bold text-amber-700">Busy on another run</span>, or{' '}
+                  <span className="font-bold text-slate-600">Offline</span>. Once dispatched, the rider will be immediately notified to begin the pickup journey.
+                </p>
+              </div>
+
+              {/* Quick Summary Pill */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="px-3.5 py-1.5 rounded-2xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80 flex items-center gap-2 shadow-2xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>{fleetSummary.available} Available Now</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Pickup & Destination Context Banner */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <Store className="w-4 h-4 text-blue-600 shrink-0" />
+                <span className="text-slate-500 shrink-0 font-medium">Pickup:</span>
+                <span className="font-bold text-slate-800 truncate">{selectedOrder.dealerName} ({selectedOrder.dealerLocation})</span>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 hidden sm:block shrink-0" />
+              <div className="flex items-center gap-2 min-w-0">
+                <Wrench className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-slate-500 shrink-0 font-medium">Deliver:</span>
+                <span className="font-bold text-slate-800 truncate">
+                  {associatedRequest?.workshopName || 'Mensah Auto Works'} ({selectedOrder.deliveryAddress || 'Westfield'})
+                </span>
+              </div>
+            </div>
+
+            {/* System Availability Status Strip (Metrics) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <button
+                onClick={() => setRiderFilter('available')}
+                className={`p-2.5 rounded-2xl border text-left transition-all ${
+                  riderFilter === 'available'
+                    ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20 shadow-xs'
+                    : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100/60'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-emerald-700 tracking-wider">
+                    Available
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                </div>
+                <div className="text-lg font-black text-emerald-950 mt-0.5">
+                  {fleetSummary.available} <span className="text-xs font-semibold text-emerald-700">Ready</span>
+                </div>
+                <p className="text-[10px] text-slate-500">Idle & ready to dispatch</p>
+              </button>
+
+              <button
+                onClick={() => setRiderFilter('all')}
+                className={`p-2.5 rounded-2xl border text-left transition-all ${
+                  assignedRider
+                    ? 'border-blue-300 bg-blue-50/40'
+                    : 'border-slate-200 bg-slate-50/60'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-blue-700 tracking-wider">
+                    Assigned
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                </div>
+                <div className="text-lg font-black text-blue-950 mt-0.5">
+                  {fleetSummary.assigned} <span className="text-xs font-semibold text-blue-700">Active</span>
+                </div>
+                <p className="text-[10px] text-slate-500">On this specific order</p>
+              </button>
+
+              <button
+                onClick={() => setRiderFilter('busy')}
+                className={`p-2.5 rounded-2xl border text-left transition-all ${
+                  riderFilter === 'busy'
+                    ? 'border-amber-500 bg-amber-50 ring-2 ring-amber-500/20 shadow-xs'
+                    : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100/60'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-amber-700 tracking-wider">
+                    Busy
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                </div>
+                <div className="text-lg font-black text-amber-950 mt-0.5">
+                  {fleetSummary.busy} <span className="text-xs font-semibold text-amber-700">On Trip</span>
+                </div>
+                <p className="text-[10px] text-slate-500">Active delivery runs</p>
+              </button>
+
+              <button
+                onClick={() => setRiderFilter('offline')}
+                className={`p-2.5 rounded-2xl border text-left transition-all ${
+                  riderFilter === 'offline'
+                    ? 'border-slate-400 bg-slate-100 ring-2 ring-slate-400/20 shadow-xs'
+                    : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100/60'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                    Offline
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-slate-400" />
+                </div>
+                <div className="text-lg font-black text-slate-700 mt-0.5">
+                  {fleetSummary.offline} <span className="text-xs font-semibold text-slate-500">Off Shift</span>
+                </div>
+                <p className="text-[10px] text-slate-500">Not taking requests</p>
+              </button>
+            </div>
+
+            {/* Search and Filters Bar */}
+            <div className="space-y-2.5 pt-2 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                {/* Search input */}
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={riderSearchQuery}
+                    onChange={(e) => setRiderSearchQuery(e.target.value)}
+                    placeholder="Search couriers by name, location zone, or registration..."
+                    className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 focus:bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium transition-all"
+                  />
+                  {riderSearchQuery && (
+                    <button
+                      onClick={() => setRiderSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter reset button if filtered */}
+                {(riderFilter !== 'all' || riderSearchQuery) && (
+                  <button
+                    onClick={() => {
+                      setRiderFilter('all');
+                      setRiderSearchQuery('');
+                    }}
+                    className="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center gap-1.5 transition-colors shrink-0"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset Filters</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+                  Filter Fleet:
+                </span>
+                {[
+                  { id: 'all', label: `All Fleet (${fleetSummary.total})` },
+                  { id: 'available', label: `🟢 Available (${fleetSummary.available})` },
+                  { id: 'busy', label: `🟡 Busy (${fleetSummary.busy})` },
+                  { id: 'offline', label: `⚪ Offline (${fleetSummary.offline})` },
+                  { id: 'jeshwang', label: '📍 Jeshwang & Westfield' },
+                  { id: 'kanifing', label: '📍 Kanifing & Banjul' },
+                  { id: 'motorcycle', label: '🏍️ Motorcycles' },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setRiderFilter(f.id as typeof riderFilter)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                      riderFilter === f.id
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Interactive Riders List with System Knowledge */}
+            <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+              {filteredRiders.length === 0 ? (
+                <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+                  <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" />
+                  <p className="text-sm font-bold text-slate-800">No delivery riders found</p>
+                  <p className="text-xs text-slate-500">
+                    No riders match the current filter or search criteria.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setRiderFilter('all');
+                      setRiderSearchQuery('');
+                    }}
+                    className="mt-2 px-4 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors"
+                  >
+                    Show All Fleet
+                  </button>
+                </div>
+              ) : (
+                filteredRiders.map((rider) => {
+                  const statusInfo = getRiderSystemStatus(rider);
+                  const isSelected = statusInfo.type === 'assigned_this_order';
+
+                  return (
+                    <div
+                      key={rider.id}
+                      className={`p-4 rounded-2xl border transition-all ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-50/70 shadow-md ring-2 ring-blue-500/20'
+                          : statusInfo.type === 'available'
+                          ? 'border-slate-200 hover:border-emerald-400 bg-white hover:bg-emerald-50/20 shadow-xs'
+                          : statusInfo.type === 'busy'
+                          ? 'border-amber-200/80 bg-amber-50/30 hover:bg-amber-50/50'
+                          : 'border-slate-200 bg-slate-50/50 opacity-80'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        {/* Rider Information */}
+                        <div className="flex items-start gap-3.5 min-w-0">
+                          {/* Avatar with live status dot */}
+                          <div className="relative shrink-0">
+                            <div
+                              className={`w-12 h-12 rounded-2xl text-white font-extrabold flex items-center justify-center text-sm shadow-xs ${
+                                isSelected
+                                  ? 'bg-gradient-to-br from-blue-600 to-indigo-700'
+                                  : statusInfo.type === 'available'
+                                  ? 'bg-gradient-to-br from-emerald-600 to-teal-700'
+                                  : statusInfo.type === 'busy'
+                                  ? 'bg-gradient-to-br from-amber-600 to-orange-700'
+                                  : 'bg-slate-400'
+                              }`}
+                            >
+                              {rider.name
+                                .split(' ')
+                                .map((n) => n[0])
+                                .slice(0, 2)
+                                .join('')}
+                            </div>
+                            <span
+                              className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                                statusInfo.type === 'available' || isSelected
+                                  ? 'bg-emerald-500'
+                                  : statusInfo.type === 'busy'
+                                  ? 'bg-amber-500'
+                                  : 'bg-slate-400'
+                              }`}
+                            />
+                          </div>
+
+                          <div className="space-y-1 min-w-0">
+                            {/* Name, Verified Badge & Real-Time Availability Pill */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-bold text-slate-900 truncate">
+                                {rider.name}
+                              </h4>
+                              <span className="text-[10px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+                                <ShieldCheck className="w-3 h-3 text-blue-600" />
+                                Verified
+                              </span>
+
+                              {/* Live Availability Badge */}
+                              <span
+                                className={`text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shrink-0 ${statusInfo.badgeClass}`}
+                              >
+                                <span className={`w-2 h-2 rounded-full ${statusInfo.dotClass}`} />
+                                <span>{statusInfo.badgeText}</span>
+                              </span>
+                            </div>
+
+                            {/* Ratings, Vehicle, Plate number */}
+                            <div className="flex items-center gap-2.5 text-xs text-slate-600 flex-wrap">
+                              <span className="flex items-center gap-1 font-semibold text-amber-600">
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                                {rider.rating.toFixed(1)} ({rider.completedDeliveries} completed trips)
+                              </span>
+                              <span className="text-slate-300">·</span>
+                              <span className="flex items-center gap-1 font-medium">
+                                <Truck className="w-3.5 h-3.5 text-blue-600" />
+                                {rider.vehicleType} · <span className="font-mono text-slate-700 font-bold">{rider.plateNumber}</span>
+                              </span>
+                            </div>
+
+                            {/* Zone and System ETA / Status Description */}
+                            <div className="space-y-0.5 pt-0.5">
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500 flex-wrap">
+                                <span className="flex items-center gap-1 text-slate-600 font-medium">
+                                  <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                                  {rider.primaryZone}
+                                </span>
+                                <span className="text-slate-300">·</span>
+                                <span
+                                  className={`font-semibold ${
+                                    statusInfo.type === 'available'
+                                      ? 'text-emerald-700'
+                                      : statusInfo.type === 'busy'
+                                      ? 'text-amber-700'
+                                      : 'text-slate-400'
+                                  }`}
+                                >
+                                  {statusInfo.pickupEta}
+                                </span>
+                              </div>
+
+                              <p className="text-[11px] text-slate-500 italic">
+                                {statusInfo.statusText}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Pricing and Dispatch / Assignment Button */}
+                        <div className="flex items-center sm:flex-col sm:items-end justify-between sm:justify-center gap-2.5 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
+                          <div className="text-left sm:text-right">
+                            <span className="text-xs font-mono font-extrabold text-slate-900 block">
+                              D{selectedOrder.deliveryFeeGMD || 120} GMD
+                            </span>
+                            <span className="text-[10px] text-slate-400 uppercase font-semibold">
+                              Express Dispatch
+                            </span>
+                          </div>
+
+                          {isSelected ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-3.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs">
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Dispatched</span>
+                              </span>
+                              <a
+                                href={`tel:${rider.phone}`}
+                                className="p-2 bg-white hover:bg-slate-100 text-blue-600 border border-blue-200 rounded-xl transition-colors shadow-2xs"
+                                title="Call Courier"
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
+                          ) : statusInfo.type === 'available' ? (
+                            <button
+                              onClick={() => handleSelectAndDispatchRider(rider)}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 hover:gap-2 group cursor-pointer"
+                              title="Assign this available courier to pick up and deliver the part"
+                            >
+                              <Zap className="w-3.5 h-3.5 text-amber-300" />
+                              <span>Select & Dispatch</span>
+                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                            </button>
+                          ) : statusInfo.type === 'busy' ? (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  handleSelectAndDispatchRider(rider);
+                                  showToast(`⚠️ Reassigned ${rider.name} to urgent order ${selectedOrder.id}`);
+                                }}
+                                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1"
+                                title="Rider is currently busy. Click to reassign as priority dispatch."
+                              >
+                                <span>Busy · Reassign</span>
+                              </button>
+                              <a
+                                href={`tel:${rider.phone}`}
+                                className="p-1.5 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-xl"
+                                title="Call Busy Courier"
+                              >
+                                <Phone className="w-3 h-3" />
+                              </a>
+                            </div>
+                          ) : (
+                            <button
+                              disabled
+                              className="px-3.5 py-1.5 bg-slate-100 text-slate-400 rounded-xl text-xs font-semibold cursor-not-allowed border border-slate-200"
+                            >
+                              <span>Offline</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Active Dispatch Live Status Banner */}
+            {assignedRider && (
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Navigation className="w-4 h-4 animate-spin-slow" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-extrabold text-slate-900">
+                        Dispatched Courier: <span className="text-blue-700">{assignedRider.name}</span>
+                      </p>
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        En Route
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-0.5">
+                      {progressPercent >= 100
+                        ? 'Package arrived at workshop bay. Ready for handover inspection.'
+                        : progressPercent >= 20
+                        ? `Live courier journey in transit along Banjul-Serrekunda Highway · Speed: ${courierSpeed} km/h`
+                        : `Courier notified. Arriving at ${selectedOrder.dealerName} counter for pickup.`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                  <a
+                    href={`tel:${assignedRider.phone}`}
+                    className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-blue-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shadow-2xs"
+                  >
+                    <Phone className="w-3 h-3 text-blue-600" />
+                    <span>Call Courier</span>
+                  </a>
+                  <button
+                    onClick={() => {
+                      setIsPlaying(true);
+                      if (progressPercent < 25) setProgressPercent(25);
+                      showToast(`Live telemetry active with ${assignedRider.name}`);
+                    }}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shadow-xs"
+                  >
+                    <Play className="w-3 h-3" />
+                    <span>Live Tracking</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Progression Milestones Card */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 sm:p-8 space-y-6">
             <div className="flex items-center justify-between">

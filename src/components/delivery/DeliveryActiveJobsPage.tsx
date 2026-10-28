@@ -49,13 +49,17 @@ export function DeliveryActiveJobsPage({ onNavigate }: DeliveryActiveJobsPagePro
     const pin = pinInputs[job.id] || '';
     const res = marketplaceStore.updateDeliveryJobStatus(job.id, 'delivered', pin);
     if (res.success) {
-      setToastMessage(`🎉 Delivery completed! D${job.payoutGMD} GMD credited to your wallet.`);
+      if (res.bothConfirmed) {
+        setToastMessage(`🎉 Dual Confirmation Complete! Escrow released: D${job.payoutGMD} GMD immediately sent to your wallet and dealer payout transferred!`);
+      } else {
+        setToastMessage(`✓ Handover verified! Escrow payout of D${job.payoutGMD} GMD will be released immediately once customer confirms part condition.`);
+      }
       setPinErrors((prev) => ({ ...prev, [job.id]: '' }));
       setPinInputs((prev) => ({ ...prev, [job.id]: '' }));
     } else {
       setPinErrors((prev) => ({ ...prev, [job.id]: res.message || 'Incorrect PIN.' }));
     }
-    setTimeout(() => setToastMessage(null), 4000);
+    setTimeout(() => setToastMessage(null), 5000);
   };
 
   return (
@@ -133,12 +137,116 @@ export function DeliveryActiveJobsPage({ onNavigate }: DeliveryActiveJobsPagePro
                 </div>
 
                 <div className="text-left sm:text-right">
-                  <span className="text-xs text-slate-400 block">Payout upon Handover</span>
+                  <span className="text-xs text-slate-400 block">Dispatch Payout upon Dual-Verification</span>
                   <span className="text-2xl font-mono font-black text-emerald-600">
                     D{job.payoutGMD} GMD
                   </span>
                 </div>
               </div>
+
+              {/* Escrow Vault & Dual-Party Status Banner */}
+              {(() => {
+                const order = store.orders.find((o) => o.id === job.orderId);
+                const isEscrowActive = order?.escrowStatus === 'held_in_escrow' || !order?.escrowStatus;
+                const isReleased = order?.escrowStatus === 'released';
+                const totalEscrow = order?.escrowAmountGMD || job.payoutGMD + 1800;
+                const dealerPay = order?.dealerPayoutGMD || 1800;
+
+                return (
+                  <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-emerald-50/80 p-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
+                        <div>
+                          <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                            AutoSpares Escrow Trust Vault
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                              {isReleased ? '🎉 Funds Released' : '🔒 Funds Withheld in Escrow'}
+                            </span>
+                          </span>
+                          <p className="text-[11px] text-slate-600">
+                            Total payment of <strong className="text-slate-900 font-mono">D{totalEscrow.toLocaleString()} GMD</strong> is securely withheld until <strong>both</strong> customer and courier confirm condition.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-right text-[11px] font-mono text-slate-600 shrink-0 bg-white/80 px-3 py-1.5 rounded-xl border border-slate-200">
+                        <div>Dealer Share: <strong>D{dealerPay.toLocaleString()} GMD</strong></div>
+                        <div className="text-emerald-700 font-bold">Your Dispatch: <strong>D{job.payoutGMD} GMD</strong></div>
+                      </div>
+                    </div>
+
+                    {/* Dual Confirmation Progress Track */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs">
+                      <div
+                        className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
+                          order?.buyerConfirmedCondition
+                            ? 'bg-emerald-100/70 border-emerald-300 text-emerald-900'
+                            : 'bg-white/80 border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <div
+                          className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black ${
+                            order?.buyerConfirmedCondition
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-200 text-slate-600'
+                          }`}
+                        >
+                          {order?.buyerConfirmedCondition ? '✓' : '1'}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-extrabold block text-[11px]">
+                            {order?.buyerConfirmedCondition ? 'Buyer Verified: Part in Good Condition' : '1. Buyer Condition Check'}
+                          </span>
+                          <span className="text-[10px] text-slate-500 block truncate">
+                            {order?.buyerConfirmedCondition
+                              ? `Confirmed by customer · Good condition`
+                              : 'Awaiting customer physical inspection'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
+                          order?.riderConfirmedCondition
+                            ? 'bg-emerald-100/70 border-emerald-300 text-emerald-900'
+                            : 'bg-white/80 border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <div
+                          className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black ${
+                            order?.riderConfirmedCondition
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-200 text-slate-600'
+                          }`}
+                        >
+                          {order?.riderConfirmedCondition ? '✓' : '2'}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-extrabold block text-[11px]">
+                            {order?.riderConfirmedCondition ? 'Courier Verified: Handover Completed' : '2. Courier Handover & PIN'}
+                          </span>
+                          <span className="text-[10px] text-slate-500 block truncate">
+                            {order?.riderConfirmedCondition
+                              ? `Handover verified · Instant payout released`
+                              : 'Enter customer PIN upon arrival'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {isReleased && order?.riderPayoutRef && (
+                      <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 font-bold">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Payout Ref: <code className="font-mono">{order.riderPayoutRef}</code> sent to your mobile wallet.</span>
+                        </span>
+                        <span className="text-[11px] font-mono text-emerald-700 font-bold">+D{job.payoutGMD} GMD</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Waypoints Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">

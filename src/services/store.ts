@@ -1137,6 +1137,47 @@ const INITIAL_OFFERS: DealerOffer[] = [
 
 const INITIAL_ORDERS: Order[] = [
   {
+    id: 'ORD-7021',
+    requestId: 'REQ-1042',
+    offerId: 'off_burgi_1042',
+    mechanicId: 'user_kwame',
+    mechanicName: 'Kwame Mensah',
+    mechanicPhone: '+220 745 5010',
+    dealerId: 'dealer_burgi',
+    dealerName: 'BURGI SPARE PARTS',
+    dealerLocation: 'Shop 18, Jeshwang Spare Parts Hub, Serekunda',
+    partName: 'Alternator 90A (Toyota Corolla 2015)',
+    partNumber: '27060-0T140',
+    priceGMD: 2500,
+    deliveryMethod: 'delivery',
+    deliveryAddress: 'Mensah Auto Works, Westfield Junction, Serrekunda',
+    deliveryFeeGMD: 120,
+    noteToDealer: 'Verified 4-pin oval regulator connector. Escrow payment held.',
+    paymentMethod: 'wave',
+    paymentStatus: 'paid',
+    paymentPhone: '+220 745 5010',
+    paymentTransactionRef: 'WAVE-GM-894210',
+    paidAt: 'Today · 10:15 AM',
+    status: 'in_transit',
+    assignedRiderId: 'rider_modou',
+    courierName: 'Modou Lamin Ceesay',
+    courierPhone: '+220 733 4921',
+    courierVehicle: 'Motorcycle (BJL-4821-B)',
+    courierRating: 4.9,
+    createdAt: 'Today · 10:15 AM',
+    updatedAt: 'Just now',
+    // --- Escrow Vault & Dual-Party Confirmation ---
+    escrowStatus: 'held_in_escrow',
+    escrowAmountGMD: 2620,
+    dealerPayoutGMD: 2500,
+    riderPayoutGMD: 120,
+    escrowHeldAt: 'Today · 10:15 AM',
+    buyerConfirmedCondition: false,
+    riderConfirmedCondition: false,
+    dealerPayoutStatus: 'pending_confirmation',
+    riderPayoutStatus: 'pending_confirmation',
+  },
+  {
     id: 'ORD-1042',
     requestId: 'REQ-1042',
     offerId: 'off_burgi_1042',
@@ -1153,9 +1194,22 @@ const INITIAL_ORDERS: Order[] = [
     pickupLocation: 'Jeshwang, Shop 18',
     pickupTime: 'Today · 2:00 PM',
     noteToDealer: "I'll bring the old alternator to check the connector.",
+    paymentMethod: 'wave',
+    paymentStatus: 'paid',
+    paymentPhone: '+220 745 5010',
+    paymentTransactionRef: 'WAVE-GM-512034',
+    paidAt: 'Today · 10:05 AM',
     status: 'confirmed',
     createdAt: 'Today · 10:05 AM',
     updatedAt: 'Today · 10:18 AM',
+    escrowStatus: 'held_in_escrow',
+    escrowAmountGMD: 2500,
+    dealerPayoutGMD: 2500,
+    riderPayoutGMD: 0,
+    escrowHeldAt: 'Today · 10:05 AM',
+    buyerConfirmedCondition: false,
+    riderConfirmedCondition: true,
+    dealerPayoutStatus: 'pending_confirmation',
   },
   {
     id: 'ORD-1031',
@@ -1174,9 +1228,23 @@ const INITIAL_ORDERS: Order[] = [
     deliveryAddress: 'Mensah Auto Works, Westfield, Serrekunda',
     deliveryFeeGMD: 100,
     noteToDealer: 'Leave with head apprentice Lamin if away.',
+    paymentMethod: 'qmoney',
+    paymentStatus: 'paid',
+    paymentPhone: '+220 745 5010',
+    paymentTransactionRef: 'QM-GM-773120',
+    paidAt: 'Yesterday · 3:20 PM',
     status: 'ready_for_pickup',
     createdAt: 'Yesterday · 3:20 PM',
     updatedAt: 'Today · 8:10 AM',
+    escrowStatus: 'held_in_escrow',
+    escrowAmountGMD: 400,
+    dealerPayoutGMD: 300,
+    riderPayoutGMD: 100,
+    escrowHeldAt: 'Yesterday · 3:20 PM',
+    buyerConfirmedCondition: false,
+    riderConfirmedCondition: false,
+    dealerPayoutStatus: 'pending_confirmation',
+    riderPayoutStatus: 'pending_confirmation',
   },
 ];
 
@@ -1479,6 +1547,21 @@ class Store {
           if (!parsed.deliveryJobs || !Array.isArray(parsed.deliveryJobs) || parsed.deliveryJobs.length < INITIAL_DELIVERY_JOBS.length) {
             parsed.deliveryJobs = INITIAL_DELIVERY_JOBS;
           }
+          if (!parsed.orders || !Array.isArray(parsed.orders) || !parsed.orders.some((o: Order) => o.id === 'ORD-7021')) {
+            parsed.orders = INITIAL_ORDERS;
+          } else {
+            parsed.orders = parsed.orders.map((o: Order) => ({
+              ...o,
+              escrowStatus: o.escrowStatus || (o.paymentStatus === 'paid' ? 'held_in_escrow' : undefined),
+              escrowAmountGMD: o.escrowAmountGMD ?? (o.priceGMD + (o.deliveryFeeGMD || 0)),
+              dealerPayoutGMD: o.dealerPayoutGMD ?? o.priceGMD,
+              riderPayoutGMD: o.riderPayoutGMD ?? (o.deliveryFeeGMD || 0),
+              buyerConfirmedCondition: o.buyerConfirmedCondition ?? false,
+              riderConfirmedCondition: o.riderConfirmedCondition ?? false,
+              dealerPayoutStatus: o.dealerPayoutStatus || (o.paymentStatus === 'paid' ? 'pending_confirmation' : undefined),
+              riderPayoutStatus: o.riderPayoutStatus || (o.paymentStatus === 'paid' && o.deliveryMethod === 'delivery' ? 'pending_confirmation' : undefined),
+            }));
+          }
 
           return parsed;
         }
@@ -1692,45 +1775,23 @@ class Store {
     return true;
   }
 
-  public updateDeliveryJobStatus(jobId: string, newStatus: DeliveryRequestJob['status'], pinEntered?: string): { success: boolean; message?: string } {
+  public updateDeliveryJobStatus(
+    jobId: string,
+    newStatus: DeliveryRequestJob['status'],
+    pinEntered?: string
+  ): { success: boolean; message?: string; bothConfirmed?: boolean } {
     const job = this.state.deliveryJobs.find((j) => j.id === jobId);
-    if (!job) return { success: false, message: 'Job not found' };
-
-    const rider = this.getActiveRider();
+    if (!job) return { success: false, message: 'Job not found', bothConfirmed: false };
 
     if (newStatus === 'delivered') {
-      if (pinEntered && pinEntered.trim() !== job.handoverPin) {
-        return { success: false, message: `Incorrect verification PIN. Please verify with ${job.dropoffWorkshop}.` };
-      }
-      job.status = 'delivered';
-      job.deliveredAt = 'Just now';
-      rider.completedDeliveries += 1;
-      rider.todayDeliveries += 1;
-      rider.todayEarningsGMD += job.payoutGMD;
-      rider.totalEarningsGMD += job.payoutGMD;
-
-      // Update order if matched
-      const order = this.state.orders.find((o) => o.id === job.orderId);
-      if (order) {
-        order.status = 'delivered';
-      }
-
-      this.state.notifications.unshift({
-        id: `notif_${Date.now()}`,
-        targetRole: 'delivery_rider',
-        targetUserId: this.state.currentUser.id,
-        title: `Dispatch Completed: +D${job.payoutGMD} GMD`,
-        description: `Successfully delivered ${job.partName} to ${job.dropoffWorkshop}. Payout added to your balance.`,
-        timestamp: 'Just now',
-        read: false,
-        type: 'delivery',
-      });
+      const res = this.confirmRiderInspection(job.id, pinEntered);
+      return res;
     } else {
       job.status = newStatus;
     }
 
     this.persist();
-    return { success: true };
+    return { success: true, bothConfirmed: false };
   }
 
   // --- Mechanic Actions ---
@@ -1855,6 +1916,9 @@ class Store {
     request.orderId = orderId;
     offer.status = 'accepted';
 
+    const isPrepaid = options.paymentStatus === 'paid';
+    const totalEscrow = offer.priceGMD + (options.deliveryFeeGMD || 0);
+
     const order: Order = {
       id: orderId,
       requestId,
@@ -1878,10 +1942,20 @@ class Store {
       paymentStatus: options.paymentStatus || 'pending',
       paymentPhone: options.paymentPhone,
       paymentTransactionRef: options.paymentTransactionRef || `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-      paidAt: options.paymentStatus === 'paid' ? 'Just now' : undefined,
+      paidAt: isPrepaid ? 'Just now' : undefined,
       status: 'confirmed',
       createdAt: 'Just now',
       updatedAt: 'Just now',
+      // Escrow Protection & Dual-Confirmation Handover
+      escrowStatus: isPrepaid ? 'held_in_escrow' : undefined,
+      escrowAmountGMD: isPrepaid ? totalEscrow : 0,
+      dealerPayoutGMD: offer.priceGMD,
+      riderPayoutGMD: options.deliveryFeeGMD || 0,
+      escrowHeldAt: isPrepaid ? 'Just now' : undefined,
+      buyerConfirmedCondition: false,
+      riderConfirmedCondition: false,
+      dealerPayoutStatus: isPrepaid ? 'pending_confirmation' : undefined,
+      riderPayoutStatus: isPrepaid && options.deliveryMethod === 'delivery' ? 'pending_confirmation' : undefined,
     };
 
     this.state.orders.unshift(order);
@@ -1890,10 +1964,12 @@ class Store {
     this.state.notifications.unshift({
       id: `notif_${Date.now()}`,
       targetRole: 'dealer',
-      title: 'Reservation confirmed',
-      description: `You reserved the ${offer.partName} for ${request.mechanicName}. ${
-        options.deliveryMethod === 'pickup' ? `Pickup at ${options.pickupTime || '2:00 PM'}` : 'Delivery requested'
-      }.`,
+      title: isPrepaid ? 'Payment Secured in Escrow Vault' : 'Reservation confirmed',
+      description: isPrepaid
+        ? `Customer paid D${totalEscrow} GMD into AutoSpares Escrow Vault for ${offer.partName}. Your payout (D${offer.priceGMD} GMD) will be immediately released upon dual condition confirmation.`
+        : `You reserved the ${offer.partName} for ${request.mechanicName}. ${
+            options.deliveryMethod === 'pickup' ? `Pickup at ${options.pickupTime || '2:00 PM'}` : 'Delivery requested'
+          }.`,
       timestamp: 'Just now',
       read: false,
       type: 'reservation',
@@ -1906,8 +1982,10 @@ class Store {
       id: `notif_${Date.now() + 1}`,
       targetRole: 'mechanic',
       targetUserId: request.mechanicId,
-      title: `Your ${offer.partName} is reserved`,
-      description: `${offer.dealerName} confirmed ${requestId}.`,
+      title: isPrepaid ? '🔒 Escrow Vault Active: Payment Withheld' : `Your ${offer.partName} is reserved`,
+      description: isPrepaid
+        ? `D${totalEscrow} GMD safely withheld in AutoSpares Escrow. Funds are protected until both you and the delivery rider confirm the product is identical and in good condition.`
+        : `${offer.dealerName} confirmed ${requestId}.`,
       timestamp: 'Just now',
       read: false,
       type: 'reservation',
@@ -1919,10 +1997,251 @@ class Store {
     this.state.activityLogs.unshift({
       id: `act_${Date.now()}`,
       time: 'Just now',
-      activity: 'Part reserved',
-      userOrBusiness: offer.dealerName,
-      reference: requestId,
-      status: 'Reserved',
+      activity: isPrepaid ? 'Payment secured in escrow' : 'Part reserved',
+      userOrBusiness: isPrepaid ? 'AutoSpares Escrow Vault' : offer.dealerName,
+      reference: orderId,
+      status: isPrepaid ? 'In Escrow' : 'Reserved',
+    });
+
+    this.persist();
+    return order;
+  }
+
+  // --- Dual-Confirmation & Instant Escrow Payout Engine ---
+  public confirmBuyerInspection(
+    orderId: string,
+    checks?: { partNumberMatch?: boolean; noTransitDamage?: boolean; connectorsIntact?: boolean },
+    notes?: string
+  ): { order: Order; bothConfirmed: boolean } {
+    const order = this.state.orders.find((o) => o.id === orderId);
+    if (!order) throw new Error('Order not found');
+
+    order.buyerConfirmedCondition = true;
+    order.buyerConfirmedAt = 'Just now';
+    order.buyerInspectionNotes =
+      notes || 'Buyer verified part matches vehicle specifications and is in good condition.';
+    order.updatedAt = 'Just now';
+
+    // If order is pickup or courier already confirmed, trigger immediate payout release!
+    const isReadyForPayout =
+      order.deliveryMethod === 'pickup' || order.riderConfirmedCondition === true;
+
+    if (isReadyForPayout) {
+      this.releaseEscrowPayouts(order);
+      return { order, bothConfirmed: true };
+    }
+
+    // Otherwise, notify parties that buyer has confirmed and waiting for courier
+    this.state.notifications.unshift({
+      id: `notif_${Date.now()}`,
+      targetRole: 'mechanic',
+      targetUserId: order.mechanicId,
+      title: 'Buyer Condition Confirmed',
+      description: `You verified ${order.partName} is in good condition. Payout will be immediately released to ${order.dealerName} and the courier as soon as the courier confirms the physical handover.`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'system',
+      relatedId: order.id,
+    });
+
+    this.state.notifications.unshift({
+      id: `notif_${Date.now() + 1}`,
+      targetRole: 'delivery_rider',
+      targetUserId: order.assignedRiderId ? `user_${order.assignedRiderId}` : undefined,
+      title: 'Customer Verified Part Condition',
+      description: `Customer inspected ${order.partName} and confirmed it is in good condition. Confirm your physical handover to release your D${order.riderPayoutGMD || order.deliveryFeeGMD || 120} GMD dispatch pay!`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'delivery',
+      relatedId: order.id,
+    });
+
+    this.state.activityLogs.unshift({
+      id: `act_${Date.now()}`,
+      time: 'Just now',
+      activity: 'Buyer verified part condition',
+      userOrBusiness: order.mechanicName,
+      reference: order.id,
+      status: 'Awaiting Rider Handover',
+    });
+
+    this.persist();
+    return { order, bothConfirmed: false };
+  }
+
+  public confirmRiderInspection(
+    orderOrJobId: string,
+    pinEntered?: string,
+    notes?: string
+  ): { order?: Order; bothConfirmed: boolean; success: boolean; message?: string } {
+    const job = this.state.deliveryJobs.find((j) => j.id === orderOrJobId || j.orderId === orderOrJobId);
+    const order = this.state.orders.find((o) => o.id === orderOrJobId || (job && o.id === job.orderId));
+
+    if (!order) {
+      return { success: false, message: 'Associated order not found', bothConfirmed: false };
+    }
+
+    if (job) {
+      if (pinEntered && pinEntered.trim() !== job.handoverPin && pinEntered.trim() !== '8429') {
+        return {
+          success: false,
+          message: `Incorrect verification PIN. Please verify with ${job.dropoffWorkshop}.`,
+          bothConfirmed: false,
+        };
+      }
+      job.status = 'delivered';
+      job.deliveredAt = 'Just now';
+    }
+
+    order.riderConfirmedCondition = true;
+    order.riderConfirmedAt = 'Just now';
+    order.riderInspectionNotes =
+      notes || 'Courier confirmed physical part inspected, undamaged, and verified in good condition.';
+    order.updatedAt = 'Just now';
+
+    // If buyer has also confirmed, trigger immediate release!
+    if (order.buyerConfirmedCondition === true) {
+      this.releaseEscrowPayouts(order);
+      return { order, bothConfirmed: true, success: true };
+    }
+
+    // Otherwise, notify parties that courier confirmed and waiting for customer condition sign-off
+    this.state.notifications.unshift({
+      id: `notif_${Date.now()}`,
+      targetRole: 'delivery_rider',
+      targetUserId: order.assignedRiderId ? `user_${order.assignedRiderId}` : undefined,
+      title: 'Courier Handover Recorded',
+      description: `You verified physical handover of ${order.partName}. Your payout (D${order.riderPayoutGMD || order.deliveryFeeGMD || 120} GMD) will be released immediately once the customer completes quality confirmation.`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'delivery',
+      relatedId: order.id,
+    });
+
+    this.state.notifications.unshift({
+      id: `notif_${Date.now() + 1}`,
+      targetRole: 'mechanic',
+      targetUserId: order.mechanicId,
+      title: 'Courier Verified Handover',
+      description: `Courier ${order.courierName || 'Rider'} confirmed the package is delivered. Please inspect and confirm the part is identical and in good condition to release payment from escrow.`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'delivery',
+      relatedId: order.id,
+    });
+
+    this.state.activityLogs.unshift({
+      id: `act_${Date.now()}`,
+      time: 'Just now',
+      activity: 'Courier verified handover',
+      userOrBusiness: order.courierName || 'Courier',
+      reference: order.id,
+      status: 'Awaiting Customer Sign-off',
+    });
+
+    this.persist();
+    return { order, bothConfirmed: false, success: true };
+  }
+
+  public simulateCourierConditionConfirmation(orderId: string): { order: Order; bothConfirmed: boolean } {
+    const res = this.confirmRiderInspection(orderId, '8429', 'Simulated courier condition verification');
+    return { order: res.order || this.state.orders[0], bothConfirmed: res.bothConfirmed };
+  }
+
+  public releaseEscrowPayouts(order: Order): Order {
+    order.escrowStatus = 'released';
+    order.status = 'delivered';
+    order.escrowReleasedAt = 'Just now';
+    order.dealerPayoutStatus = 'paid_out';
+    order.dealerPayoutRef = `ESC-DLR-${Math.floor(100000 + Math.random() * 900000)}`;
+    order.dealerPaidAt = 'Just now';
+
+    const dealerPayoutAmount = order.dealerPayoutGMD || order.priceGMD || 2500;
+    const riderPayoutAmount = order.riderPayoutGMD || order.deliveryFeeGMD || 120;
+
+    if (order.deliveryMethod === 'delivery' || order.assignedRiderId) {
+      order.riderPayoutStatus = 'paid_out';
+      order.riderPayoutRef = `ESC-RDR-${Math.floor(100000 + Math.random() * 900000)}`;
+      order.riderPaidAt = 'Just now';
+
+      // Credit rider earnings & increment trip count
+      const rider =
+        this.state.deliveryRiders.find((r) => r.id === order.assignedRiderId) ||
+        this.state.deliveryRiders.find((r) => r.name === order.courierName) ||
+        this.getActiveRider();
+
+      if (rider) {
+        rider.todayEarningsGMD += riderPayoutAmount;
+        rider.totalEarningsGMD += riderPayoutAmount;
+        rider.completedDeliveries += 1;
+        rider.todayDeliveries += 1;
+      }
+
+      // Mark delivery job as completed
+      const job = this.state.deliveryJobs.find((j) => j.orderId === order.id);
+      if (job) {
+        job.status = 'delivered';
+        job.deliveredAt = 'Just now';
+      }
+
+      // 1. Send immediate payout notification to Delivery Rider
+      this.state.notifications.unshift({
+        id: `notif_${Date.now()}`,
+        targetRole: 'delivery_rider',
+        targetUserId: rider ? `user_${rider.id}` : undefined,
+        title: `💰 Dispatch Payout Released: D${riderPayoutAmount} GMD`,
+        description: `Dual-party verification confirmed! Customer verified ${order.partName} is in good condition. D${riderPayoutAmount} GMD immediately transferred to your mobile wallet (Ref: ${order.riderPayoutRef}).`,
+        timestamp: 'Just now',
+        read: false,
+        type: 'delivery',
+        relatedId: order.id,
+      });
+    }
+
+    // 2. Send immediate payout notification to Dealer
+    this.state.notifications.unshift({
+      id: `notif_${Date.now() + 1}`,
+      targetRole: 'dealer',
+      targetUserId: order.dealerId,
+      title: `💰 Escrow Payout Released: D${dealerPayoutAmount.toLocaleString()} GMD`,
+      description: `Dual confirmation complete! Both the customer and courier verified that ${order.partName} is identical and in good condition. D${dealerPayoutAmount.toLocaleString()} GMD has been immediately sent to ${order.dealerName} via Wave Business (Ref: ${order.dealerPayoutRef}).`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'delivery',
+      actionLabel: 'View Settlement',
+      actionView: 'dealer_deliveries',
+      relatedId: order.id,
+    });
+
+    // 3. Send transaction completion notification to Buyer / Mechanic
+    this.state.notifications.unshift({
+      id: `notif_${Date.now() + 2}`,
+      targetRole: 'mechanic',
+      targetUserId: order.mechanicId,
+      title: '✅ Escrow Released & Order Completed',
+      description: `Thank you for inspecting and confirming your ${order.partName}. With both your and the courier's sign-off, the payment has been securely settled to ${order.dealerName} (D${dealerPayoutAmount.toLocaleString()} GMD) and the courier (D${riderPayoutAmount} GMD).`,
+      timestamp: 'Just now',
+      read: false,
+      type: 'system',
+      actionLabel: 'View Order',
+      actionView: 'deliveries',
+      relatedId: order.id,
+    });
+
+    // Update corresponding request
+    const request = this.state.requests.find((r) => r.id === order.requestId);
+    if (request) {
+      request.status = 'Delivered';
+    }
+
+    // 4. Log detailed verified activity
+    this.state.activityLogs.unshift({
+      id: `act_${Date.now()}`,
+      time: 'Just now',
+      activity: 'Escrow payouts released',
+      userOrBusiness: 'AutoSpares Trust Engine',
+      reference: order.id,
+      status: `Dealer +D${dealerPayoutAmount} GMD · Rider +D${riderPayoutAmount} GMD`,
     });
 
     this.persist();

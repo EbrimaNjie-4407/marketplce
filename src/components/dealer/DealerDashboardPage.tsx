@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, CheckCircle2, ArrowRight, Store } from 'lucide-react';
+import { Plus, CheckCircle2, ArrowRight, Store, ShieldCheck } from 'lucide-react';
 import { useStore } from '../../hooks/useStore';
 import { PartRequest } from '../../types';
 
@@ -265,6 +265,86 @@ export function DealerDashboardPage({
           >
             Manage profile
           </button>
+        </div>
+
+        {/* Escrow Settlement & Trust Vault Widget */}
+        <div className="bg-gradient-to-br from-slate-900 to-blue-950 text-white rounded-3xl p-6 shadow-md space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              <h3 className="font-extrabold text-sm text-white">Escrow Trust Vault</h3>
+            </div>
+            <span className="text-[10px] uppercase tracking-wider font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+              Dual Protection
+            </span>
+          </div>
+
+          <p className="text-[11px] text-slate-300 leading-relaxed">
+            Buyer payments are securely held in escrow until <strong>both customer & courier confirm</strong> the delivered part matches specifications and is undamaged.
+          </p>
+
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-1">
+              <span className="text-[10px] text-slate-400 block font-medium">Withheld in Escrow</span>
+              <div className="text-xl font-mono font-black text-amber-400">
+                D{store.orders
+                  .filter((o) => o.dealerId === dealer.id || o.dealerName.includes('BURGI'))
+                  .filter((o) => o.escrowStatus === 'held_in_escrow' || o.dealerPayoutStatus === 'pending_confirmation')
+                  .reduce((sum, o) => sum + (o.dealerPayoutGMD || o.priceGMD || 0), 0)
+                  .toLocaleString()} GMD
+              </div>
+              <span className="text-[10px] text-amber-200/80 block">Awaiting dual sign-off</span>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-1">
+              <span className="text-[10px] text-slate-400 block font-medium">Settled & Paid Out</span>
+              <div className="text-xl font-mono font-black text-emerald-400">
+                D{store.orders
+                  .filter((o) => o.dealerId === dealer.id || o.dealerName.includes('BURGI'))
+                  .filter((o) => o.escrowStatus === 'released' || o.dealerPayoutStatus === 'paid_out')
+                  .reduce((sum, o) => sum + (o.dealerPayoutGMD || o.priceGMD || 0), 0)
+                  .toLocaleString()} GMD
+              </div>
+              <span className="text-[10px] text-emerald-300/80 block">Dispatched via Wave</span>
+            </div>
+          </div>
+
+          {/* Recent Escrow Records */}
+          <div className="space-y-2 pt-2 border-t border-white/10">
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+              Recent Dual-Confirmation Orders
+            </span>
+            {store.orders
+              .filter((o) => o.dealerId === dealer.id || o.dealerName.includes('BURGI'))
+              .slice(0, 2)
+              .map((ord) => (
+                <div
+                  key={ord.id}
+                  className="bg-white/5 border border-white/10 rounded-xl p-2.5 text-xs flex items-center justify-between"
+                >
+                  <div className="min-w-0 pr-2">
+                    <div className="font-bold text-white truncate">{ord.partName}</div>
+                    <div className="text-[10px] text-slate-400 font-mono">
+                      {ord.id} · {ord.dealerPayoutRef ? `Ref: ${ord.dealerPayoutRef}` : 'Escrow Protected'}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="font-mono font-bold text-emerald-400 block text-xs">
+                      +D{(ord.dealerPayoutGMD || ord.priceGMD || 0).toLocaleString()}
+                    </span>
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                        ord.escrowStatus === 'released'
+                          ? 'bg-emerald-500/20 text-emerald-300'
+                          : 'bg-amber-500/20 text-amber-300'
+                      }`}
+                    >
+                      {ord.escrowStatus === 'released' ? 'Settled' : 'Withheld'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+          </div>
         </div>
       </div>
     </div>

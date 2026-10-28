@@ -1,0 +1,640 @@
+# MASTER IMPLEMENTATION PROMPT: DEPANEH AUTOMOTIVE SPARE-PARTS MARKETPLACE
+
+## 1. PROJECT OVERVIEW AND OBJECTIVE
+
+I have an existing automotive spare-parts marketplace currently branded as GM Spare/GMSPARE. I have attached a Figma PDF containing the new UI/UX design I want to implement.
+
+Your task is to redesign the existing application to match the attached Figma design and completely rebrand it as DEPANEH.
+
+This is an existing application, not a new project. The existing source code contains important business logic, routes, integrations, data models, authentication, permissions, and workflows that must be preserved.
+
+The finished application must combine:
+
+- The visual design and user experience of the attached Figma PDF.
+- The functionality and business logic of the existing application.
+- A consistent, application-wide DEPANEH brand identity.
+- A complete interface for buyers/mechanics, dealers, delivery riders, and administrators.
+- Functional, responsive, maintainable, and production-oriented implementation.
+
+**Primary rule: change the presentation without breaking the functionality.**
+
+Do not create a static prototype, rebuild the application from scratch unnecessarily, or replace working backend functionality with mock data.
+
+## 2. SOURCE-OF-TRUTH HIERARCHY
+
+Follow these priorities throughout implementation.
+
+**First: Attached Figma PDF**
+
+Use the PDF as the authoritative reference for layout, typography, colours, spacing, component styling, navigation, cards, forms, responsive behaviour, and overall visual hierarchy.
+
+**Second: Existing application codebase**
+
+Use the existing source code as the authority for business logic, routes, authentication, role permissions, database schemas, API contracts, inventory management, payment logic, order processing, delivery workflows, and integrations.
+
+**Third: This implementation brief**
+
+Use this prompt to ensure all existing capabilities are preserved, the missing rider interface is designed, payment workflows remain consistent, and the entire application is rebranded as DEPANEH.
+
+If a feature is not shown in the PDF, do not remove it. Redesign it using the PDF's visual language.
+
+If a design reference conflicts with existing business logic, preserve the business logic and adapt the UI.
+
+## 3. PHASE ONE: AUDIT THE EXISTING APPLICATION
+
+Before editing any files, inspect the project thoroughly.
+
+Identify and document:
+
+1. Framework, programming languages, build system, dependencies, and package manager.
+2. Project structure, entry points, components, and styling conventions.
+3. All existing routes and screens.
+4. Authentication, registration, sessions, and role-based permissions.
+5. Buyer/mechanic functionality.
+6. Dealer functionality and inventory management.
+7. Delivery-rider functionality and delivery status transitions.
+8. Administrator functionality.
+9. Database tables, models, relationships, and data-fetching methods.
+10. Existing API integrations and external services.
+11. Payment options, order states, and settlement-related logic.
+12. Product search, vehicle compatibility, requests, quotations, and messaging.
+13. Notifications, profile management, and settings.
+14. Environment variables, deployment requirements, and configuration.
+15. Existing errors, incomplete features, mock data, and known limitations.
+
+Inspect the actual code instead of assuming how the application works.
+
+Map each existing feature to the screen where it will appear in the redesigned application.
+
+Identify shared components that can be reused and modified rather than duplicated.
+
+Do not delete files, replace the application entry point, modify database structures, or rewrite major components before understanding their dependencies.
+
+If an existing build error prevents implementation, identify its exact cause and resolve it where possible without introducing unnecessary architectural changes.
+
+## 4. COMPLETE REBRANDING: GM SPARE TO DEPANEH
+
+The official name of the marketplace is now **DEPANEH**.
+
+Replace all unintended customer-facing references to:
+
+- GM Spare
+- GMSPARE
+- GM Spare Market
+- GM Spare Marketplace
+- AutoSpares GM
+- Other previous product or marketplace names
+
+Use DEPANEH consistently across the entire application.
+
+### Branding requirements
+
+Update:
+
+- Logo and wordmark.
+- Landing page and public navigation.
+- Headers, footers, sidebars, and dashboards.
+- Browser title and favicon where applicable.
+- Page titles, SEO metadata, and social-sharing metadata.
+- Login, registration, and onboarding screens.
+- Dealer registration and verification screens.
+- Buyer/mechanic dashboards.
+- Delivery-rider dashboard and delivery screens.
+- Administrator dashboard and management tools.
+- Product listings and product details.
+- Requests, quotations, orders, checkout, and receipts.
+- Delivery notifications and order-status messages.
+- Email templates and transactional messages where present.
+- Loading screens, empty states, error messages, and confirmation dialogs.
+- Help content, public-facing documentation, and labels.
+- Any other user-facing location where the previous brand appears.
+
+Use the exact brand spelling DEPANEH.
+
+Preserve the Figma design's visual direction while applying DEPANEH branding. If a suitable logo exists in the PDF or project, reuse it. Otherwise, create a professional wordmark consistent with the design system.
+
+Do not introduce unrelated branding or leave old brand names visible in some dashboards while updating others.
+
+### Protect the existing technical infrastructure
+
+Do not blindly rename database tables, columns, API endpoints, environment variables, authentication identifiers, repository names, payment-provider merchant IDs, or deployment settings.
+
+These may contain legacy names that must remain for compatibility.
+
+Only rename internal technical identifiers when necessary and after updating all dependencies safely.
+
+Do not expose or modify production credentials. Identify external branding or merchant settings that require separate manual updates rather than pretending to change them from the frontend.
+
+At completion, search the codebase for legacy brand references and explain any remaining references that must be retained for technical reasons.
+
+## 5. UI REDESIGN: FOLLOW THE FIGMA PDF
+
+Study the attached PDF carefully before implementing the visual changes.
+
+Use its design system consistently across all relevant screens.
+
+Match its:
+
+- Colour palette and design tokens.
+- Typography, font sizes, weights, and hierarchy.
+- Spacing, alignment, and layout proportions.
+- Cards, borders, shadows, and corner radii.
+- Buttons, input fields, selectors, tabs, and dropdowns.
+- Navigation, icons, menus, and page headers.
+- Search bars, filters, badges, and product cards.
+- Product image sizes and aspect ratios.
+- Modals, dialogs, notifications, and confirmation screens.
+- Loading, empty, error, disabled, and success states.
+- Responsive layouts and mobile navigation.
+
+Create reusable components and shared design tokens.
+
+Avoid inconsistent one-off styles, excessive decoration, arbitrary colours, generic placeholder imagery, and unnecessary gradients.
+
+Do not simply apply the new colours to the existing interface. Reconstruct the layout and screen hierarchy to match the Figma reference.
+
+At the same time, do not sacrifice functionality or accessibility for visual similarity.
+
+## 6. COMPLETE APPLICATION REDESIGN
+
+Redesign every existing screen relevant to the marketplace, including screens absent from the PDF.
+
+### Public marketplace
+
+- Landing page.
+- Main navigation and global search.
+- Part categories and vehicle selectors.
+- Product catalogues and search results.
+- Product details.
+- Dealer discovery and verified dealer profiles.
+- Registration and login.
+- Public informational pages where present.
+
+### Buyer and mechanic workspace
+
+- Home/dashboard.
+- Find Parts.
+- Search results and filters.
+- Vehicle selection and compatibility.
+- Requests and quotations.
+- Product details and dealer contact.
+- Saved vehicles or favourites where supported.
+- Orders and order details.
+- Checkout and payment selection.
+- Shop pickup and delivery tracking.
+- Notifications and messaging.
+- Profile and account settings.
+
+### Dealer workspace
+
+- Dealer dashboard.
+- Business profile and verification.
+- Inventory and product listings.
+- Add and edit products.
+- Stock and price management.
+- Vehicle compatibility information.
+- Incoming orders.
+- Customer requests and quotations.
+- Order preparation and dispatch.
+- Shop-pickup management.
+- Payment collection records and reconciliation where supported.
+- Notifications and dealer account settings.
+
+### Delivery-rider workspace
+
+Create the missing dedicated rider interface as described in Section 8.
+
+### Administrator workspace
+
+- Administrator dashboard.
+- User and role management.
+- Dealer verification.
+- Product and listing moderation.
+- Order and delivery oversight.
+- Complaints and disputes.
+- Payment reconciliation.
+- Platform settings.
+- Audit records and reporting where supported.
+
+All redesigned pages must use a unified DEPANEH design system.
+
+## 7. BUYER AND MECHANIC FUNCTIONALITY
+
+Preserve every existing buyer/mechanic capability.
+
+Users must be able to:
+
+- Browse available automotive spare parts.
+- Search by part name, part number, category, make, model, year, and other supported attributes.
+- Filter and sort results.
+- View product images, condition, price, availability, and dealer information.
+- Check vehicle compatibility where data is available.
+- Discover verified dealers.
+- Submit requests for unavailable or difficult-to-find parts.
+- Receive and compare quotations where supported.
+- Contact dealers through existing communication features.
+- Save products and vehicles where supported.
+- Place and manage orders.
+- Choose delivery or shop pickup.
+- Track orders and delivery progress.
+- Receive notifications.
+- Manage profiles and account settings.
+- Report issues and raise disputes through available workflows.
+
+Preserve existing backend search and filtering. Do not replace functional API-based search with a hardcoded list or a frontend-only mock implementation.
+
+Do not invent compatibility claims, product certifications, dealer verification, or authenticity guarantees.
+
+## 8. DELIVERY-RIDER INTERFACE: MANDATORY
+
+The current application contains a dedicated delivery-rider role, but the Figma PDF does not provide a complete rider-specific design.
+
+You must create that interface using the Figma PDF's design system.
+
+Do not omit the rider role, merge it into the dealer dashboard, or remove its existing routes and permissions.
+
+First inspect the existing delivery workflow and data model.
+
+### A. Rider dashboard
+
+Display relevant operational summaries:
+
+- Assigned deliveries.
+- Pending pickups.
+- Deliveries in progress.
+- Completed deliveries.
+- Failed or cancelled deliveries.
+- Outstanding actions and notifications.
+
+Use real data from the existing backend.
+
+### B. Assigned deliveries
+
+Show each assigned delivery with:
+
+- Order reference.
+- Relevant parts and quantities.
+- Dealer pickup location.
+- Customer delivery address.
+- Necessary contact information.
+- Delivery instructions.
+- Order amount and collection amount where applicable.
+- Current status.
+
+Provide useful search, filtering, and status indicators if consistent with the application.
+
+### C. Delivery details
+
+Provide:
+
+- Order summary.
+- Dealer information.
+- Pickup and drop-off details.
+- Customer contact actions.
+- Map or navigation actions where a mapping integration exists.
+- Pickup confirmation.
+- Dispatch and delivery-status actions.
+- Payment collection information where applicable.
+
+Do not invent a working map integration if one does not exist.
+
+### D. Delivery workflow
+
+Preserve the existing status model. Where compatible, present a clear sequence such as:
+
+Assigned → Accepted → Arrived at Pickup → Picked Up → In Transit → Delivered.
+
+Handle failed delivery, cancellation, and return scenarios according to existing business rules.
+
+Prevent riders from skipping mandatory steps, modifying another rider's assignments, or changing protected order information.
+
+### E. Proof of delivery
+
+Where supported or safely implementable, provide:
+
+- Customer confirmation.
+- Rider confirmation.
+- Delivery timestamp.
+- Confirmation code, signature, or other supported evidence.
+- Notes explaining failed or disputed deliveries.
+- Relevant supporting evidence.
+
+### F. Payment collection
+
+For pay-on-delivery orders, allow the rider to record:
+
+- Whether payment was collected.
+- Amount collected.
+- Payment method, where applicable.
+- Collection timestamp.
+- Any discrepancy or exception.
+
+For shop-pickup orders, do not ask the rider to collect payment unless the order explicitly requires it.
+
+A rider must not be able to falsely mark an uncollected payment as collected, modify the agreed price, release dealer funds, or override an administrator's dispute decision.
+
+### G. Delivery history
+
+Show completed, failed, and cancelled deliveries according to existing permissions.
+
+Include relevant status history and collection records.
+
+### H. Mobile-first usability
+
+The rider interface must work particularly well on mobile devices.
+
+Use readable text, accessible controls, clear status indicators, and simple workflows that can be completed with minimal typing.
+
+Keep essential delivery actions easy to reach.
+
+Do not require a desktop computer for ordinary delivery tasks.
+
+All rider screens must be functional and connected to the existing application state, not populated with permanent dummy deliveries.
+
+## 9. DEALER INVENTORY AND FUTURE SYNCHRONISATION
+
+Preserve the current inventory system.
+
+Maintain product identifiers, descriptions, prices, stock quantities, images, vehicle compatibility, and dealer ownership.
+
+If an existing inventory synchronisation integration exists, preserve it.
+
+Do not silently overwrite inventory records or introduce a competing source of truth.
+
+For future integrations with dealer accounting or inventory software, keep the architecture extensible to authorised APIs, webhooks, scheduled CSV imports, or local connectors.
+
+However, do not claim automatic synchronisation exists unless it has actually been implemented and tested.
+
+Where the existing backend supports it, account for reserved stock, unavailable products, stale inventory data, and duplicate order attempts.
+
+Use appropriate validation and error handling for inventory updates.
+
+## 10. PAYMENT AND ORDER WORKFLOWS
+
+Preserve the existing payment capabilities and integrate them into the redesigned UI.
+
+The intended payment methods are:
+
+1. Pay on Delivery.
+2. Pay Directly at Shop.
+
+### A. Pay on Delivery
+
+The expected workflow is:
+
+1. The customer selects a product and places an order.
+2. The dealer confirms product availability and the agreed order terms.
+3. The order is assigned for delivery.
+4. The rider collects the product and completes the delivery.
+5. The rider records whether payment was collected and the amount.
+6. The customer confirms receipt through the supported workflow.
+7. The system validates the required delivery and payment confirmations.
+8. The order becomes eligible for reconciliation and settlement according to the existing payment arrangement.
+
+If confirmations conflict, required evidence is missing, or a dispute is raised, the system must flag the order for review.
+
+Do not automatically mark a payment as received just because the rider marked a delivery complete.
+
+### B. Pay Directly at Shop
+
+The expected workflow is:
+
+1. The customer chooses shop pickup.
+2. The dealer confirms availability and prepares the item.
+3. The customer visits the shop.
+4. The customer pays the dealer directly.
+5. The dealer records payment confirmation and collection.
+6. The system records the order's completion.
+
+Do not require the delivery rider to participate in this workflow unless the existing business rules explicitly require it.
+
+### C. Separate status tracking
+
+Maintain separate order, delivery, and payment statuses.
+
+Examples include:
+
+Order status:
+Pending, Confirmed, Processing, Dispatched, Delivered, Completed, Cancelled.
+
+Delivery status:
+Unassigned, Assigned, Accepted, Picked Up, In Transit, Delivered, Failed.
+
+Payment status:
+Awaiting Payment, Payment Collection Pending, Payment Collected, Verification Pending, Reconciled, Disputed, Refunded where applicable.
+
+Use the existing status model where it already serves these purposes. Do not create conflicting or duplicate status systems.
+
+### D. Payment holds and settlement limitations
+
+The marketplace must not claim to freeze or release money unless the underlying payment or settlement infrastructure actually supports that action.
+
+Recording a payment as pending is not equivalent to holding money in escrow.
+
+Cash collected by a rider cannot be electronically frozen by the website. The system can record the collection, track remittance, flag discrepancies, and restrict automated completion while a case is reviewed.
+
+For shop payments, the dealer receives the money directly. Any marketplace commission or settlement obligation must follow the existing dealer agreement and accounting design.
+
+If a real payment-provider integration exists, preserve it and use its documented capabilities.
+
+Never invent payment integrations, transaction IDs, successful transfers, refunds, or escrow protection.
+
+If a required payment capability does not exist, explain what infrastructure or provider support is needed.
+
+## 11. ADMINISTRATOR CONTROLS AND DISPUTE MANAGEMENT
+
+Preserve all existing administrator functionality.
+
+Administrators must be able to access the existing tools for:
+
+- Managing users and roles.
+- Verifying or suspending dealers.
+- Reviewing listings and complaints.
+- Monitoring orders and deliveries.
+- Investigating disputes.
+- Reviewing delivery and payment evidence.
+- Monitoring payment discrepancies.
+- Managing refunds or cancellations where supported.
+- Viewing audit records and operational reports where available.
+
+Provide clear indicators for orders requiring attention, unresolved disputes, failed deliveries, and payment reconciliation problems.
+
+Privileged actions must require appropriate authorisation and explicit confirmation.
+
+Enforce permissions on the backend, not only through frontend visibility.
+
+Maintain an audit trail for important status changes, including the responsible actor and timestamp where supported.
+
+## 12. TECHNICAL IMPLEMENTATION AND ARCHITECTURE
+
+Preserve the existing framework, architecture, and integrations unless a documented issue requires a change.
+
+Requirements:
+
+- Reuse existing components and business logic.
+- Introduce shared components where appropriate.
+- Keep UI, business logic, and data-access responsibilities organised.
+- Preserve API contracts and database schemas where possible.
+- Avoid unnecessary dependencies and broad rewrites.
+- Maintain existing environment-variable conventions.
+- Never expose secrets in frontend code.
+- Keep sensitive operations server-side.
+- Validate forms and handle errors correctly.
+- Provide appropriate loading, empty, success, and failure states.
+- Preserve authentication, permissions, and session handling.
+- Keep the application accessible and responsive.
+- Avoid hardcoded identities, order records, payment outcomes, and role assignments.
+- Do not remove existing functionality simply because it is difficult to redesign.
+
+If a required capability is unsupported by the existing backend, identify the limitation and implement only what can be completed safely with the available infrastructure.
+
+## 13. RESPONSIVE DESIGN AND ACCESSIBILITY
+
+The entire application must work across desktop, tablet, and mobile.
+
+Desktop:
+- Follow the Figma reference's intended content hierarchy.
+- Use screen space efficiently.
+- Prevent unnecessary horizontal scrolling.
+- Keep navigation and primary actions organised.
+
+Mobile:
+- Reflow layouts rather than merely shrinking desktop screens.
+- Use readable typography and appropriate touch targets.
+- Optimise search, filters, product cards, checkout, and order tracking.
+- Adapt inventory tables into usable mobile layouts.
+- Prioritise simple rider workflows.
+- Ensure dialogs, fixed navigation, and headers do not obscure essential content.
+
+Accessibility:
+- Use meaningful labels and accessible form controls.
+- Maintain adequate colour contrast.
+- Support keyboard navigation where appropriate.
+- Provide clear validation and error messages.
+- Do not communicate status through colour alone.
+
+## 14. IMPLEMENTATION SEQUENCE
+
+Complete the work in the following order.
+
+**Phase 1 — Audit**
+
+Inspect the Figma PDF and the complete source code. Map the existing features, routes, roles, dependencies, and workflows.
+
+**Phase 2 — Design system**
+
+Extract the Figma design tokens and establish reusable components.
+
+**Phase 3 — Rebranding**
+
+Implement DEPANEH branding throughout the application without breaking technical identifiers or integrations.
+
+**Phase 4 — Shared interface**
+
+Redesign shared navigation, page layouts, forms, buttons, cards, search, filters, dialogs, and notifications.
+
+**Phase 5 — Buyer and mechanic**
+
+Implement the marketplace, search, product details, requests, quotations, orders, checkout, profiles, and notifications.
+
+**Phase 6 — Dealer**
+
+Implement inventory, product management, orders, requests, quotations, shop pickup, and existing settlement-related screens.
+
+**Phase 7 — Delivery rider**
+
+Create and integrate the dedicated rider dashboard, delivery details, status updates, proof of delivery, payment collection, and history.
+
+**Phase 8 — Administrator**
+
+Redesign the existing administrative tools, verification, monitoring, and dispute workflows.
+
+**Phase 9 — Integration**
+
+Connect every redesigned screen to the existing backend, APIs, authentication, and state management.
+
+**Phase 10 — Regression testing**
+
+Test existing workflows, role permissions, navigation, responsive layouts, order transitions, and payment-related states.
+
+Do not stop after the landing page or shared components.
+
+If the implementation is too large to complete in one pass, maintain a checklist and continue from the next unfinished phase. Do not claim completion while major screens or workflows remain unfinished.
+
+## 15. TESTING AND ACCEPTANCE CRITERIA
+
+Before declaring the task complete, verify the following.
+
+### Visual requirements
+
+- All relevant screens follow the Figma design.
+- The DEPANEH branding is consistent.
+- Buyer, dealer, rider, and administrator interfaces share a coherent design system.
+- The application is responsive.
+- The rider interface follows the same design language.
+
+### Functional requirements
+
+- Existing routes continue to work.
+- Authentication and permissions remain intact.
+- Search, filtering, product details, and vehicle compatibility remain functional.
+- Requests and quotations remain functional.
+- Dealers can manage inventory and process orders.
+- Riders can access authorised deliveries and update permitted statuses.
+- Buyers can select the available payment methods.
+- Shop pickup and pay-on-delivery workflows remain intact.
+- Delivery evidence and payment collection are tracked separately.
+- Notifications, profiles, and administrator tools continue to work.
+- Data is retrieved from the actual application backend.
+
+### Security requirements
+
+- Users cannot access another role's protected operations.
+- Riders can manage only authorised deliveries.
+- Dealers cannot modify another dealer's inventory or orders.
+- Payment and settlement actions are appropriately protected.
+- Sensitive information is not unnecessarily exposed.
+
+### Technical requirements
+
+- No broken imports or missing components.
+- No obvious runtime errors.
+- No decorative buttons pretending to perform real actions.
+- No accidental duplicate routes.
+- No unexplained changes to database models or dependencies.
+- The production build succeeds, or any blocking issue is documented with its exact error.
+
+Run available tests and build commands. Test the principal journeys for buyers/mechanics, dealers, riders, and administrators.
+
+Do not report a test as successful unless it was actually run.
+
+## 16. FINAL DELIVERY REPORT
+
+After implementation, provide a report containing:
+
+1. Summary of the UI redesign.
+2. Summary of the DEPANEH rebranding.
+3. Screens redesigned and routes affected.
+4. Components created or modified.
+5. Existing functionality preserved.
+6. Delivery-rider screens implemented.
+7. Backend integrations preserved or changed.
+8. Any database migrations required.
+9. Any environment or configuration changes required.
+10. Build and test results.
+11. Features that remain incomplete and the reasons.
+12. Remaining legacy brand references and why they remain.
+13. Manual steps required before deployment.
+14. Known issues and recommended next steps.
+
+Distinguish completed functionality from work that is only partially implemented or requires an external integration.
+
+## FINAL DIRECTIVE
+
+Transform the existing GM Spare marketplace into DEPANEH.
+
+Use the attached Figma PDF as the visual source of truth. Preserve the existing application as the functional source of truth. Rebrand every customer-facing surface. Retain all existing roles and workflows, including the dedicated delivery-rider experience, even though the PDF does not include a rider-specific design.
+
+Do not replace the application with a static prototype. Do not remove working features. Do not fabricate backend integrations or payment capabilities.
+
+Deliver a cohesive, responsive, fully integrated implementation, test it, and report honestly on what works and what remains incomplete.

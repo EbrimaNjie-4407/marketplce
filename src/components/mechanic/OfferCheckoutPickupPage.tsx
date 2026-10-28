@@ -119,19 +119,55 @@ export function OfferCheckoutPickupPage({
   if (confirmedOrder) {
     return (
       <div className="p-6 lg:p-8 space-y-6 max-w-3xl mx-auto animate-fadeIn">
-        <div className="p-8 rounded-3xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 text-center space-y-3">
+        <div className="p-8 rounded-3xl bg-gradient-to-br from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200 text-center space-y-3 shadow-xs">
           <div className="w-16 h-16 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-emerald-600/20">
-            <Check className="w-8 h-8 stroke-[3]" />
+            <ShieldCheck className="w-8 h-8 stroke-[2.5]" />
           </div>
           <h2 className="text-2xl font-black text-emerald-950">
-            {paymentMethod === 'cash_on_handover' ? 'Part Reserved Successfully!' : 'Payment Verified & Confirmed!'}
+            {paymentMethod === 'cash_on_handover' ? 'Part Reserved Successfully!' : 'Payment Secured in Escrow Vault!'}
           </h2>
-          <p className="text-xs text-emerald-800 max-w-md mx-auto">
+          <p className="text-xs text-emerald-800 max-w-lg mx-auto">
             {paymentMethod === 'cash_on_handover'
               ? `Your part is reserved with ${activeOffer.dealerName}. Pay D${totalAmount.toLocaleString()} GMD upon handover.`
-              : `D${totalAmount.toLocaleString()} GMD transferred via ${paymentMethod.toUpperCase()} to ${activeOffer.dealerName}.`}
+              : `D${totalAmount.toLocaleString()} GMD is securely withheld in the AutoSpares Trust Vault via ${paymentMethod.toUpperCase()}. Funds are locked and will NOT be disbursed until BOTH you and the courier confirm the part is identical and in good condition.`}
           </p>
         </div>
+
+        {/* Escrow Trust Vault Protection Card */}
+        {paymentMethod !== 'cash_on_handover' && (
+          <div className="p-5 rounded-3xl bg-gradient-to-r from-blue-900 to-slate-900 text-white space-y-3.5 shadow-md">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>AutoSpares Trust & Escrow Guarantee</span>
+              </span>
+              <span className="text-xs font-mono font-bold text-slate-300">
+                Vault Total: D{totalAmount.toLocaleString()} GMD
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">1. Dealer Payout (Withheld)</span>
+                <p className="font-extrabold text-white text-sm font-mono">D{partPrice.toLocaleString()} GMD</p>
+                <p className="text-[11px] text-slate-300">Sent to {activeOffer.dealerName} only after dual condition sign-off</p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">2. Delivery Rider Pay (Withheld)</span>
+                <p className="font-extrabold text-white text-sm font-mono">D{deliveryFee.toLocaleString()} GMD</p>
+                <p className="text-[11px] text-slate-300">Sent to courier wallet only after delivery verification</p>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-800 flex items-center gap-2 text-[11px] text-slate-300">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>
+                Both parties must inspect the part upon physical handover. Once you and the courier confirm the condition matches, the system immediately processes and distributes the payouts.
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Digital Receipt */}
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
@@ -160,7 +196,7 @@ export function OfferCheckoutPickupPage({
               <p className="font-bold text-slate-800 capitalize">{method === 'pickup' ? 'Shop Pickup' : 'Express Delivery'}</p>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase block">Total</span>
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Total in Escrow</span>
               <p className="font-black text-emerald-700 font-mono text-sm">D{totalAmount.toLocaleString()} GMD</p>
             </div>
           </div>
@@ -176,7 +212,7 @@ export function OfferCheckoutPickupPage({
             {onTrackOrder ? (
               <button
                 onClick={() => onTrackOrder(confirmedOrder.id)}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Truck className="w-4 h-4" />
                 <span>Track Live Transit & Handover</span>
@@ -218,10 +254,17 @@ export function OfferCheckoutPickupPage({
           </p>
         </div>
 
-        <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-full self-start sm:self-auto flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          AutoSpares GM Escrow Active
-        </span>
+        <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200/90 flex items-start gap-2.5 text-xs max-w-md self-start sm:self-auto shadow-2xs">
+          <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+            <ShieldCheck className="w-4 h-4" />
+          </div>
+          <div className="space-y-0.5">
+            <span className="font-extrabold text-emerald-950 block text-xs">AutoSpares Escrow Trust Vault</span>
+            <p className="text-[11px] text-emerald-800 leading-snug">
+              Payment is securely withheld. Funds are only sent to the dealer and courier after <strong>both you and the rider confirm the part is identical and in good condition</strong>.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* 1. "Your chosen offer" Card matching Figma Page 6 */}

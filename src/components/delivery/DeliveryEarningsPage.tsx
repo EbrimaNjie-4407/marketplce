@@ -250,26 +250,37 @@ export function DeliveryEarningsPage({ onNavigate: _onNavigate }: DeliveryEarnin
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
-                {completedJobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-3">
-                      <div className="font-bold text-slate-900">{job.partName}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">#{job.id}</div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <div className="text-slate-800 text-[11px] font-semibold">{job.pickupShop}</div>
-                      <div className="text-[10px] text-slate-500">→ {job.dropoffWorkshop}</div>
-                    </td>
-                    <td className="py-3 px-3 text-slate-500 text-[11px]">
-                      {job.deliveredAt || 'Today'}
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <span className="font-mono font-bold text-emerald-600 text-sm">
-                        +D{job.payoutGMD}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {completedJobs.map((job) => {
+                  const order = store.orders.find((o) => o.id === job.orderId);
+                  return (
+                    <tr key={job.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-3 px-3">
+                        <div className="font-bold text-slate-900">{job.partName}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">
+                          #{job.id} {order ? `· Order #${order.id}` : ''}
+                        </div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="text-slate-800 text-[11px] font-semibold">{job.pickupShop}</div>
+                        <div className="text-[10px] text-slate-500">→ {job.dropoffWorkshop}</div>
+                      </td>
+                      <td className="py-3 px-3 text-slate-500 text-[11px]">
+                        <div className="font-medium">{job.deliveredAt || 'Today'}</div>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full mt-0.5">
+                          ✓ Dual Verified
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <span className="font-mono font-bold text-emerald-600 text-sm block">
+                          +D{job.payoutGMD}
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-400 block">
+                          {order?.riderPayoutRef || `ESC-RDR-${Math.floor(100000 + Math.random() * 900000)}`}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -138,6 +138,8 @@ export interface DealerOffer {
 export type DeliveryMethod = 'pickup' | 'delivery';
 export type OrderStatus = 'pending' | 'confirmed' | 'ready_for_pickup' | 'in_transit' | 'collected' | 'delivered' | 'cancelled';
 
+export type EscrowStatus = 'held_in_escrow' | 'released' | 'refunded' | 'disputed';
+
 export interface Order {
   id: string; // e.g. "ORD-7021"
   requestId: string;
@@ -170,6 +172,31 @@ export interface Order {
   courierPhone?: string;
   courierVehicle?: string;
   courierRating?: number;
+
+  // --- Trust & Escrow Protection (Dual-Confirmation Handover) ---
+  escrowStatus?: EscrowStatus;
+  escrowAmountGMD?: number; // Total amount safely held in escrow vault
+  dealerPayoutGMD?: number; // Part price earmarked for dealer payout upon dual-confirmation
+  riderPayoutGMD?: number;  // Delivery fare earmarked for courier payout upon dual-confirmation
+  escrowHeldAt?: string;
+  escrowReleasedAt?: string;
+
+  // Dual Confirmation flags:
+  buyerConfirmedCondition?: boolean; // Buyer/Mechanic confirmed part is identical and in good condition
+  buyerConfirmedAt?: string;
+  buyerInspectionNotes?: string;
+
+  riderConfirmedCondition?: boolean; // Courier confirmed physical package verified and handed over in good condition
+  riderConfirmedAt?: string;
+  riderInspectionNotes?: string;
+
+  dealerPayoutStatus?: 'pending_confirmation' | 'paid_out';
+  dealerPayoutRef?: string;
+  dealerPaidAt?: string;
+
+  riderPayoutStatus?: 'pending_confirmation' | 'paid_out';
+  riderPayoutRef?: string;
+  riderPaidAt?: string;
 }
 
 export interface NotificationItem {

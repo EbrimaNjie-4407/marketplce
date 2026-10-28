@@ -343,22 +343,52 @@ export function DeliveriesView({ initialOrderId, onBack }: DeliveriesViewProps) 
     showToast(`Status updated to: ${newStatus.replace(/_/g, ' ')}`);
   };
 
-  const handleConfirmInspection = () => {
+  const handleConfirmBuyerInspection = () => {
     if (!selectedOrder) return;
-    marketplaceStore.updateOrderStatus(selectedOrder.id, 'delivered');
+    const res = marketplaceStore.confirmBuyerInspection(selectedOrder.id, inspectionChecks);
     const updated = store.orders.find((o) => o.id === selectedOrder.id);
     if (updated) setSelectedOrder({ ...updated });
     setShowInspectionModal(false);
-    setProgressPercent(100);
-    setIsPlaying(false);
-    setCourierSpeed(0);
-    showToast('✓ Handover confirmed! Part inspected, accepted, and recorded.');
+
+    if (res.bothConfirmed) {
+      setProgressPercent(100);
+      setIsPlaying(false);
+      setCourierSpeed(0);
+      showToast(
+        `🎉 Dual Confirmation Verified! Escrow released: D${(selectedOrder.dealerPayoutGMD || selectedOrder.priceGMD).toLocaleString()} GMD sent to ${selectedOrder.dealerName} and D${selectedOrder.riderPayoutGMD || selectedOrder.deliveryFeeGMD || 120} GMD sent to courier.`
+      );
+    } else {
+      showToast(
+        `✓ You confirmed the product matches & is in good condition! Escrow will release once Courier ${selectedOrder.courierName || 'Rider'} confirms handover.`
+      );
+    }
   };
 
-  const isDelivered =
-    progressPercent >= 100 ||
-    selectedOrder?.status === 'collected' ||
-    selectedOrder?.status === 'delivered';
+  const handleSimulateCourierConfirmation = () => {
+    if (!selectedOrder) return;
+    const res = marketplaceStore.simulateCourierConditionConfirmation(selectedOrder.id);
+    const updated = store.orders.find((o) => o.id === selectedOrder.id);
+    if (updated) setSelectedOrder({ ...updated });
+
+    if (res.bothConfirmed) {
+      setProgressPercent(100);
+      setIsPlaying(false);
+      setCourierSpeed(0);
+      showToast(
+        `🎉 Dual Confirmation Verified! Escrow released: D${(selectedOrder.dealerPayoutGMD || selectedOrder.priceGMD).toLocaleString()} GMD sent to ${selectedOrder.dealerName} and D${selectedOrder.riderPayoutGMD || selectedOrder.deliveryFeeGMD || 120} GMD sent to courier.`
+      );
+    } else {
+      showToast(
+        `✓ Courier confirmed package handover & verified condition! Customer condition sign-off will release escrow payout.`
+      );
+    }
+  };
+
+  const isDelivered = Boolean(
+    selectedOrder?.escrowStatus === 'released' ||
+    selectedOrder?.status === 'delivered' ||
+    (progressPercent >= 100 && selectedOrder?.buyerConfirmedCondition && selectedOrder?.riderConfirmedCondition)
+  );
 
   // Associated Part Request
   const associatedRequest = store.requests.find((r) => r.id === selectedOrder?.requestId);
@@ -689,6 +719,83 @@ export function DeliveriesView({ initialOrderId, onBack }: DeliveriesViewProps) 
                   )}
                 </button>
               </div>
+            </div>
+
+            {/* Escrow Trust Vault Protection Card */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950 text-white space-y-3 border border-indigo-500/30 shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Escrow Trust Vault</span>
+                </span>
+                <span className="text-[11px] font-mono font-extrabold text-white">
+                  D{(selectedOrder.escrowAmountGMD || (selectedOrder.priceGMD + (selectedOrder.deliveryFeeGMD || 120))).toLocaleString()} GMD
+                </span>
+              </div>
+
+              {/* Dual Confirmation Status Pills */}
+              <div className="space-y-2 pt-1 text-xs">
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/80 border border-slate-700/70">
+                  <span className="text-slate-300 flex items-center gap-1.5">
+                    <UserCheck className="w-3.5 h-3.5 text-blue-400" />
+                    <span>1. Buyer Condition Check:</span>
+                  </span>
+                  {selectedOrder.buyerConfirmedCondition ? (
+                    <span className="font-extrabold text-emerald-400 flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Confirmed
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-amber-300 font-semibold">
+                      ⏳ Pending Inspection
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/80 border border-slate-700/70">
+                  <span className="text-slate-300 flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>2. Rider Handover Check:</span>
+                  </span>
+                  {selectedOrder.riderConfirmedCondition ? (
+                    <span className="font-extrabold text-emerald-400 flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Confirmed
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-amber-300 font-semibold">
+                      ⏳ Pending Handover
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Payout Distribution details */}
+              <div className="pt-2 border-t border-slate-800 text-[11px] space-y-1.5">
+                <div className="flex items-center justify-between text-slate-300">
+                  <span>Dealer ({selectedOrder.dealerName.slice(0, 16)}):</span>
+                  <span className="font-mono font-bold text-white">
+                    D{(selectedOrder.dealerPayoutGMD || selectedOrder.priceGMD).toLocaleString()} GMD ·{' '}
+                    <span className={selectedOrder.dealerPayoutStatus === 'paid_out' ? 'text-emerald-400 font-extrabold' : 'text-amber-400'}>
+                      {selectedOrder.dealerPayoutStatus === 'paid_out' ? '✓ Transferred' : '🔒 Withheld in Escrow'}
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-slate-300">
+                  <span>Courier ({selectedOrder.courierName ? selectedOrder.courierName.split(' ')[0] : 'Rider'}):</span>
+                  <span className="font-mono font-bold text-white">
+                    D{(selectedOrder.riderPayoutGMD || selectedOrder.deliveryFeeGMD || 120).toLocaleString()} GMD ·{' '}
+                    <span className={selectedOrder.riderPayoutStatus === 'paid_out' ? 'text-emerald-400 font-extrabold' : 'text-amber-400'}>
+                      {selectedOrder.riderPayoutStatus === 'paid_out' ? '✓ Transferred' : '🔒 Withheld in Escrow'}
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              {selectedOrder.escrowStatus === 'released' && (
+                <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-[11px] text-emerald-300 font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Escrow Cleared: Payouts processed to dealer & courier instantly.</span>
+                </div>
+              )}
             </div>
 
             {/* Dealer & Workshop Location Summary */}
@@ -1257,46 +1364,197 @@ export function DeliveriesView({ initialOrderId, onBack }: DeliveriesViewProps) 
               })}
             </div>
 
-            {/* Handover Completion / Mechanic Inspection Action */}
+            {/* Handover Completion & Dual-Confirmation Escrow Settlement Panel */}
             <div className="pt-6 border-t border-slate-100 space-y-4">
-              {isDelivered ? (
-                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-3">
-                  <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                    <span>Part Received & Accepted at Workshop</span>
+              {isDelivered || selectedOrder.escrowStatus === 'released' ? (
+                <div className="p-5 bg-gradient-to-br from-emerald-50 via-teal-50 to-blue-50 rounded-3xl border border-emerald-200 space-y-4 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 text-emerald-900 font-extrabold text-sm sm:text-base">
+                      <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                        <Check className="w-5 h-5 stroke-[3]" />
+                      </div>
+                      <div>
+                        <span>Dual Confirmation Complete — Escrow Payouts Disbursed!</span>
+                        <p className="text-xs font-normal text-emerald-700">
+                          Both customer and delivery courier confirmed the product matches and is in good condition.
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="px-3 py-1 bg-emerald-600 text-white font-extrabold text-xs rounded-full shadow-2xs self-start sm:self-auto">
+                      Settled & Complete
+                    </span>
                   </div>
-                  <p className="text-xs text-emerald-700">
-                    The {selectedOrder.partName} has completed physical inspection, connector fit
-                    verification, and has been signed off. Order completed.
-                  </p>
-                  <div className="pt-2 flex items-center gap-2">
+
+                  {/* Dual verification proof cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                    <div className="p-3 bg-white/90 rounded-2xl border border-emerald-200/80 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                          <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Customer Sign-off</span>
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          ✓ Verified
+                        </span>
+                      </div>
+                      <p className="text-slate-600 text-[11px]">
+                        Condition tested, connectors intact, OEM confirmed matching vehicle.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-white/90 rounded-2xl border border-emerald-200/80 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                          <Truck className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Courier Sign-off</span>
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          ✓ Verified
+                        </span>
+                      </div>
+                      <p className="text-slate-600 text-[11px]">
+                        Package delivered intact without transit damage; handover PIN validated.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Real-time automated transaction distribution */}
+                  <div className="p-3.5 rounded-2xl bg-slate-900 text-white text-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
+                        Instant Automatic Payment Distribution
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">AutoSpares Trust Settlement</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-0.5">
+                      <div className="p-2.5 rounded-xl bg-slate-800 border border-slate-700">
+                        <span className="text-[10px] text-slate-400 block">Sent to Dealer ({selectedOrder.dealerName})</span>
+                        <span className="font-mono font-black text-emerald-400 text-sm">
+                          D{(selectedOrder.dealerPayoutGMD || selectedOrder.priceGMD).toLocaleString()} GMD
+                        </span>
+                        <p className="text-[10px] text-slate-400 font-mono">Ref: {selectedOrder.dealerPayoutRef || 'ESC-DLR-882910'}</p>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-slate-800 border border-slate-700">
+                        <span className="text-[10px] text-slate-400 block">Sent to Courier ({selectedOrder.courierName || 'Courier'})</span>
+                        <span className="font-mono font-black text-emerald-400 text-sm">
+                          D{(selectedOrder.riderPayoutGMD || selectedOrder.deliveryFeeGMD || 120).toLocaleString()} GMD
+                        </span>
+                        <p className="text-[10px] text-slate-400 font-mono">Ref: {selectedOrder.riderPayoutRef || 'ESC-RDR-301920'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
                     <button
                       onClick={() => setShowInspectionModal(true)}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
                     >
                       View Inspection Certificate
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-0.5">
-                    <h4 className="text-xs font-bold text-slate-900">
-                      Package Handover Inspection
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      When the dispatch courier arrives at the workshop, verify the part number and
-                      condition before signing off.
-                    </p>
+                <div className="p-5 bg-slate-50 rounded-3xl border border-slate-200/90 space-y-4 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        <h4 className="text-sm font-extrabold text-slate-900">
+                          Secure Escrow Dual-Confirmation Verification
+                        </h4>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1 max-w-xl">
+                        To guarantee trust, the payment of{' '}
+                        <strong className="text-slate-800">
+                          D{(selectedOrder.escrowAmountGMD || (selectedOrder.priceGMD + (selectedOrder.deliveryFeeGMD || 120))).toLocaleString()} GMD
+                        </strong>{' '}
+                        is securely withheld in escrow. The system will process and immediately disburse the payouts to the dealer (D{(selectedOrder.dealerPayoutGMD || selectedOrder.priceGMD).toLocaleString()}) and courier (D{selectedOrder.riderPayoutGMD || selectedOrder.deliveryFeeGMD || 120}) once <strong>both you and the delivery rider</strong> confirm the part is identical and in good condition.
+                      </p>
+                    </div>
+
+                    <span className="px-3 py-1 bg-amber-100 text-amber-800 border border-amber-200 rounded-full text-xs font-bold shrink-0 self-start sm:self-auto">
+                      🔒 Held in Escrow
+                    </span>
                   </div>
 
-                  <button
-                    onClick={() => setShowInspectionModal(true)}
-                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shrink-0 flex items-center justify-center gap-2"
-                  >
-                    <Check className="w-4 h-4" />
-                    <span>Inspect & Accept Part</span>
-                  </button>
+                  {/* Dual Action Confirmation Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    {/* Buyer Confirmation Box */}
+                    <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                          <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                          <span>1. Customer Quality Check</span>
+                        </span>
+                        {selectedOrder.buyerConfirmedCondition ? (
+                          <span className="font-extrabold text-emerald-600 flex items-center gap-1 text-[11px]">
+                            <Check className="w-3 h-3 stroke-[3]" /> Confirmed
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-amber-600 font-semibold">
+                            Pending inspection
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-slate-500 text-[11px]">
+                        Verify OEM part number, check for transit damage, and confirm physical fit with your vehicle.
+                      </p>
+                      {selectedOrder.buyerConfirmedCondition ? (
+                        <div className="p-2 bg-emerald-50 text-emerald-800 rounded-xl font-semibold text-[11px] flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>You have verified this part is in good condition!</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowInspectionModal(true)}
+                          className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Inspect & Confirm Part Condition</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Delivery Rider Handover Box */}
+                    <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                          <Truck className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>2. Courier Handover Check</span>
+                        </span>
+                        {selectedOrder.riderConfirmedCondition ? (
+                          <span className="font-extrabold text-emerald-600 flex items-center gap-1 text-[11px]">
+                            <Check className="w-3 h-3 stroke-[3]" /> Confirmed
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-amber-600 font-semibold">
+                            Pending handover
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-slate-500 text-[11px]">
+                        Courier confirms physical package handover intact at workshop using Handover PIN <strong>{handoverPIN}</strong>.
+                      </p>
+                      {selectedOrder.riderConfirmedCondition ? (
+                        <div className="p-2 bg-emerald-50 text-emerald-800 rounded-xl font-semibold text-[11px] flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Courier has confirmed physical delivery!</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleSimulateCourierConfirmation}
+                          className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          title="Simulate courier entering PIN and verifying handover condition"
+                        >
+                          <Truck className="w-3.5 h-3.5" />
+                          <span>Simulate Courier Handover Sign-off</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1420,16 +1678,20 @@ export function DeliveriesView({ initialOrderId, onBack }: DeliveriesViewProps) 
 
               <button
                 type="button"
-                onClick={handleConfirmInspection}
+                onClick={handleConfirmBuyerInspection}
                 disabled={
                   !inspectionChecks.partNumberMatch ||
                   !inspectionChecks.noTransitDamage ||
                   !inspectionChecks.connectorsIntact
                 }
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:pointer-events-none text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2"
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:pointer-events-none text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
               >
-                <Check className="w-4 h-4" />
-                <span>Confirm Part Inspected & Accepted</span>
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>
+                  {selectedOrder.riderConfirmedCondition
+                    ? 'Confirm Condition & Release Escrow Payouts!'
+                    : 'Confirm Condition (Awaiting Courier Handover)'}
+                </span>
               </button>
             </div>
           </div>
